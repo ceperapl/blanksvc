@@ -38,7 +38,7 @@ func NewConfig() Config {
 	config := Config{}
 
 	// Init config via env variables
-	viper.SetEnvPrefix("PRF")
+	viper.SetEnvPrefix(envPrefix)
 
 	viper.BindEnv(httpServerPortEnv)
 	viper.SetDefault(httpServerPortEnv, httpServerPortDefault)

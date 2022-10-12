@@ -3,5 +3,5 @@ package service
 import "errors"
 
 var (
-	ErrEmplyString = errors.New("empty string")
+	ErrEmptyString = errors.New("empty string")
 )

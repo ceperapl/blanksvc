@@ -1,12 +1,13 @@
 package grpc
 
 import (
+	"context"
+
 	"github.com/company/blanksvc/pkg/endpoints"
 
 	"github.com/go-kit/kit/transport"
 	grpctransport "github.com/go-kit/kit/transport/grpc"
 	"github.com/go-kit/log"
-	context "golang.org/x/net/context"
 )
 
 type grpcServer struct {

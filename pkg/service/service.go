@@ -22,7 +22,7 @@ func New(logger log.Logger) Service {
 
 func (s service) Hello(name string) (string, error) {
 	if name == "" {
-		return "", ErrEmplyString
+		return "", ErrEmptyString
 	}
 
 	return fmt.Sprintf("Hello %s", name), nil

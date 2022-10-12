@@ -19,7 +19,7 @@ func errorEncoder(_ context.Context, err error, w http.ResponseWriter) {
 
 func errorToCode(err error) int {
 	switch err {
-	case service.ErrEmplyString:
+	case service.ErrEmptyString:
 		return http.StatusBadRequest
 	}
 	return http.StatusInternalServerError

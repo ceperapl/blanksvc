@@ -26,11 +26,9 @@ func RunServer() error {
 
 	// Create a single logger, which we'll use and give to other components.
 	var logger log.Logger
-	{
-		logger = log.NewLogfmtLogger(os.Stderr)
-		logger = log.With(logger, "ts", log.DefaultTimestampUTC)
-		logger = log.With(logger, "caller", log.DefaultCaller)
-	}
+	logger = log.NewLogfmtLogger(os.Stderr)
+	logger = log.With(logger, "ts", log.DefaultTimestampUTC)
+	logger = log.With(logger, "caller", log.DefaultCaller)
 
 	// Build the layers of the service "onion" from the inside out
 	service := service.New(logger)
@@ -42,7 +40,7 @@ func RunServer() error {
 	rootMux := mux.NewRouter()
 	// Configure health checks
 	healthchecker := healthcheck.New()
-	healthchecker.AddReadinessChecks(readynessCheck)
+	healthchecker.AddReadinessChecks(readinessCheck)
 	rootMux.Handle(config.HTTPServer.ReadinessEndpoint, healthchecker.ReadinessHandler())
 	rootMux.Handle(config.HTTPServer.LivenessEndpoint, healthchecker.LivenessHandler())
 	// Configure REST API
@@ -65,7 +63,7 @@ func RunServer() error {
 	baseServer := grpc.NewServer()
 	grpctransport.RegisterHelloServer(baseServer, grpcServer)
 	// Start the GRPC server
-	logger.Log("transport", "HTTP", "addr", grpcServerAddr)
+	logger.Log("transport", "GRPC", "addr", grpcServerAddr)
 	go func() {
 		doneC <- baseServer.Serve(grpcListener)
 	}()
@@ -79,7 +77,7 @@ func RunServer() error {
 	return nil
 }
 
-func readynessCheck() error {
+func readinessCheck() error {
 	// return errors.New("error")
 	return nil
 }
