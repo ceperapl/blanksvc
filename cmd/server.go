@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 
+	hellov1 "github.com/company/blanksvc/gen/proto/go/hello/v1"
 	"github.com/company/blanksvc/pkg/endpoints"
 	"github.com/company/blanksvc/pkg/service"
 	grpctransport "github.com/company/blanksvc/pkg/transport/grpc"
@@ -61,7 +62,7 @@ func RunServer() error {
 		return err
 	}
 	baseServer := grpc.NewServer()
-	grpctransport.RegisterHelloServer(baseServer, grpcServer)
+	hellov1.RegisterHelloServiceServer(baseServer, grpcServer)
 	// Start the GRPC server
 	logger.Log("transport", "GRPC", "addr", grpcServerAddr)
 	go func() {

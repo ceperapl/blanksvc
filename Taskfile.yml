@@ -11,10 +11,8 @@ vars:
 tasks:
 
   generate:
-    env:
-      SWAGGER_GENERATE_EXTENSION: "false"
     cmds:
-      - docker run --rm -v {{.ROOT_PATH}}:/proto znly/protoc --go_out=plugins=grpc:/proto/pkg/transport/grpc --swagger_out=logtostderr=true:/proto/api/swagger-spec -I=/proto/api/protobuf-spec {{.SEARCH_PROTOFILES}}
+      - buf generate ./api/protobuf-spec/
 
   analysis:
     dir: ./
@@ -24,4 +22,5 @@ tasks:
   build:
     deps: [generate]
     cmds:
-      - CGO_ENABLED=0 go build -ldflags "-X main.Version={{.HASH}} -X main.Hash={{.HASH}}" -a -o {{.BINARY_PATH}} .
+      # - CGO_ENABLED=0 go build -ldflags "-X main.Version={{.HASH}} -X main.Hash={{.HASH}}" -a -o {{.BINARY_PATH}} .
+      - CGO_ENABLED=0 go build -a -o {{.BINARY_PATH}} .

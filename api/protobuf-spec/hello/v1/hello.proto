@@ -1,10 +1,6 @@
 syntax = "proto3";
 
-package entities.v1;
-
-option go_package = "grpc";
-
-import "google/api/annotations.proto";
+package hello.v1;
 
 message HelloRequest {
     string name = 1;
@@ -14,6 +10,6 @@ message HelloResponse {
     string greeting = 1;
 }
 
-service Hello {
+service HelloService {
 	rpc Hello(HelloRequest) returns (HelloResponse);
 }
