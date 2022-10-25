@@ -14,8 +14,17 @@ tasks:
     cmds:
       - buf generate ./api/protobuf-spec/
 
+  buf-lint:
+    dir: ./api/protobuf-spec
+    cmds:
+      - buf lint
+
+  hadolint:
+    cmds:
+      - docker run --rm -i hadolint/hadolint < Dockerfile
+
   analysis:
-    dir: ./
+    deps: [buf-lint, hadolint]
     cmds:
       - golangci-lint run -v --new-from-rev `git merge-base master {{.BRANCH}}` ./...
 

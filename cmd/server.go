@@ -12,6 +12,7 @@ import (
 	grpctransport "github.com/company/blanksvc/pkg/transport/grpc"
 	httptransport "github.com/company/blanksvc/pkg/transport/http"
 	"github.com/company/blanksvc/pkg/utils/healthcheck"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 
 	"github.com/go-kit/log"
 	"github.com/gorilla/mux"
@@ -44,11 +45,14 @@ func RunServer() error {
 	healthchecker.AddReadinessChecks(readinessCheck)
 	rootMux.Handle(config.HTTPServer.ReadinessEndpoint, healthchecker.ReadinessHandler())
 	rootMux.Handle(config.HTTPServer.LivenessEndpoint, healthchecker.LivenessHandler())
+	// Configure metrics
+	rootMux.Handle("/metrics", promhttp.Handler())
 	// Configure REST API
 	subrouter := rootMux.PathPrefix("/api/v1").Subrouter()
 	subrouter.Handle("/hello", httpHandler)
 	// Start the HTTP server
 	httpServerAddr := fmt.Sprintf("0.0.0.0:%d", config.HTTPServer.Port)
+	// nolint: errcheck
 	logger.Log("transport", "HTTP", "addr", httpServerAddr)
 	go func() {
 		doneC <- http.ListenAndServe(httpServerAddr, rootMux)
@@ -58,12 +62,14 @@ func RunServer() error {
 	grpcServerAddr := fmt.Sprintf("0.0.0.0:%d", config.GRPCServer.Port)
 	grpcListener, err := net.Listen("tcp", grpcServerAddr)
 	if err != nil {
+		// nolint: errcheck
 		logger.Log("transport", "gRPC", "during", "Listen", "err", err)
 		return err
 	}
 	baseServer := grpc.NewServer()
 	hellov1.RegisterHelloServiceServer(baseServer, grpcServer)
 	// Start the GRPC server
+	// nolint: errcheck
 	logger.Log("transport", "GRPC", "addr", grpcServerAddr)
 	go func() {
 		doneC <- baseServer.Serve(grpcListener)
@@ -71,6 +77,7 @@ func RunServer() error {
 
 	// waiting for the errors from servers
 	if err := <-doneC; err != nil {
+		// nolint: errcheck
 		logger.Log("err", err)
 		return err
 	}
