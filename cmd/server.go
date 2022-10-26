@@ -8,10 +8,12 @@ import (
 
 	hellov1 "github.com/company/blanksvc/gen/proto/go/hello/v1"
 	"github.com/company/blanksvc/pkg/endpoints"
+	"github.com/company/blanksvc/pkg/metrics"
 	"github.com/company/blanksvc/pkg/service"
 	grpctransport "github.com/company/blanksvc/pkg/transport/grpc"
 	httptransport "github.com/company/blanksvc/pkg/transport/http"
 	"github.com/company/blanksvc/pkg/utils/healthcheck"
+
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
 	"github.com/go-kit/log"
@@ -26,6 +28,11 @@ func RunServer() error {
 	// Init config
 	config := NewConfig()
 
+	// Create metrics
+	requestLatencyMetric := metrics.NewRequestLatencyMetric()
+	requestCounterMetric := metrics.NewRequestCounterMetric()
+	errorCounterMetric := metrics.NewErrorCounterMetric()
+
 	// Create a single logger, which we'll use and give to other components.
 	var logger log.Logger
 	logger = log.NewLogfmtLogger(os.Stderr)
@@ -34,8 +41,8 @@ func RunServer() error {
 
 	// Build the layers of the service "onion" from the inside out
 	service := service.New(logger)
-	endpoints := endpoints.New(service, logger)
-	httpHandler := httptransport.NewHTTPHandler(endpoints, logger)
+	endpoints := endpoints.New(service, logger, requestLatencyMetric)
+	httpHandler := httptransport.NewHTTPHandler(endpoints, logger, requestCounterMetric, errorCounterMetric)
 	grpcServer := grpctransport.NewGRPCServer(endpoints, logger)
 
 	// Configure the HTTP server

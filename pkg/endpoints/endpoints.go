@@ -5,6 +5,7 @@ import (
 
 	"github.com/company/blanksvc/pkg/endpoints/middleware"
 	"github.com/company/blanksvc/pkg/service"
+	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/go-kit/kit/endpoint"
 	"github.com/go-kit/log"
@@ -22,9 +23,12 @@ type Endpoints struct {
 	HelloEndpoint endpoint.Endpoint
 }
 
-func New(svc service.Service, logger log.Logger) Endpoints {
+func New(svc service.Service, logger log.Logger, requestLatencyMetric *prometheus.HistogramVec) Endpoints {
+	helloEndpoint := MakeHelloEndpoint(svc)
+	helloEndpoint = middleware.LoggingMiddleware(log.With(logger, "method", "Hello"))(helloEndpoint)
+	helloEndpoint = middleware.MetricsMiddleware(requestLatencyMetric)(helloEndpoint)
 	return Endpoints{
-		HelloEndpoint: middleware.LoggingMiddleware(log.With(logger, "method", "Hello"))(MakeHelloEndpoint(svc)),
+		HelloEndpoint: helloEndpoint,
 	}
 }
 
