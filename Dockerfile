@@ -1,8 +1,8 @@
 # build the server binary
-FROM golang:1.14.4-alpine AS base-builder
+FROM golang:1.18-alpine AS base-builder
 WORKDIR /go/src/github.com/ceperapl/tasks
 COPY . .
-RUN CGO_ENABLED=0 GOOS=linux go build -o bin/server -tags release ./cmd
+RUN CGO_ENABLED=0 GOOS=linux go build -o bin/server -tags release
 
 # copy the server binary from builder stage; run the server binary
 FROM alpine:3.16

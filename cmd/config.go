@@ -23,7 +23,7 @@ const (
 	grpcServerPortDefault = 9000
 
 	postgresDSNEnv     = "POSTGRES_DSN"
-	postgresDSNDefault = "host=localhost user=postgres dbname=contacts password=password port=9920 sslmode=disable"
+	postgresDSNDefault = "postgres://postgres:postgres@localhost:5432/blanksvc?sslmode=disable"
 )
 
 type Config struct {

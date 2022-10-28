@@ -1,0 +1,85 @@
+syntax = "proto3";
+
+package task.v1;
+
+import "google/protobuf/timestamp.proto";
+
+message Task {
+    string id = 1;
+    string name = 2;
+    string description = 3;
+    google.protobuf.Timestamp deadline = 4;
+    google.protobuf.Timestamp completed_at = 5;
+	google.protobuf.Timestamp created_at = 6;
+	google.protobuf.Timestamp updated_at = 7;
+}
+
+message ListTasksRequest {
+    string filter = 1;
+    string sort = 2;
+    int32 items_on_page = 3;
+    int32 page = 4;
+}
+
+message ListTasksResponse {
+    repeated Task tasks = 1;
+    int64 count = 2;
+}
+
+message GetTaskRequest {
+    string id = 1;
+}
+
+message GetTaskResponse {
+    Task task = 1;
+}
+
+message CreateTaskRequest {
+    Task task = 1;
+}
+
+message CreateTaskResponse {
+    Task task = 1;
+}
+
+message UpdateTaskRequest {
+    Task task = 1;
+}
+
+message UpdateTaskResponse {
+    Task task = 1;
+}
+
+message CompleteTaskRequest {
+    Task task = 1;
+}
+
+message CompleteTaskResponse {
+    Task task = 1;
+}
+
+message UncompleteTaskRequest {
+    Task task = 1;
+}
+
+message UncompleteTaskResponse {
+    Task task = 1;
+}
+
+message DeleteTaskRequest {
+    string id = 1;
+}
+
+message DeleteTaskResponse {
+
+}
+
+service TaskService {
+	rpc ListTasks(ListTasksRequest) returns (ListTasksResponse);
+    rpc GetTask(GetTaskRequest) returns (GetTaskResponse);
+    rpc CreateTask(CreateTaskRequest) returns (CreateTaskResponse);
+    rpc UpdateTask(UpdateTaskRequest) returns (UpdateTaskResponse);
+    rpc CompleteTask(CompleteTaskRequest) returns (CompleteTaskResponse);
+    rpc UncompleteTask(UncompleteTaskRequest) returns (UncompleteTaskResponse);
+    rpc DeleteTask(DeleteTaskRequest) returns (DeleteTaskResponse);
+}

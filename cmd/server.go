@@ -1,23 +1,27 @@
 package cmd
 
 import (
+	"database/sql"
 	"fmt"
 	"net"
 	"net/http"
 	"os"
+	"time"
 
 	hellov1 "github.com/company/blanksvc/gen/proto/go/hello/v1"
 	"github.com/company/blanksvc/pkg/endpoints"
 	"github.com/company/blanksvc/pkg/metrics"
+	"github.com/company/blanksvc/pkg/repository/postgres"
 	"github.com/company/blanksvc/pkg/service"
 	grpctransport "github.com/company/blanksvc/pkg/transport/grpc"
 	httptransport "github.com/company/blanksvc/pkg/transport/http"
-	"github.com/company/blanksvc/pkg/utils/healthcheck"
+	"github.com/company/blanksvc/pkg/utils"
 
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
 	"github.com/go-kit/log"
 	"github.com/gorilla/mux"
+	_ "github.com/jackc/pgx/v4/stdlib"
 	"google.golang.org/grpc"
 )
 
@@ -39,24 +43,45 @@ func RunServer() error {
 	logger = log.With(logger, "ts", log.DefaultTimestampUTC)
 	logger = log.With(logger, "caller", log.DefaultCaller)
 
-	// Build the layers of the service "onion" from the inside out
-	service := service.New(logger)
-	endpoints := endpoints.New(service, logger, requestLatencyMetric)
-	httpHandler := httptransport.NewHTTPHandler(endpoints, logger, requestCounterMetric, errorCounterMetric)
-	grpcServer := grpctransport.NewGRPCServer(endpoints, logger)
+	// Connect to Postgres with retry
+	var db *sql.DB
+	if err := utils.Retry(time.Second, 30, func() (stop bool) {
+		logger.Log("database", config.Postgres.DSN)
+		var errOpen error
+		if db, errOpen = sql.Open("postgres", config.Postgres.DSN); errOpen != nil {
+			return false
+		}
+		if err := db.Ping(); err != nil {
+			return false
+		}
+		return true
+	}); err != nil {
+		return err
+	}
+	defer db.Close()
+
+	// Migrate DB
+	if err := postgres.Migrate(config.Postgres.DSN); err != nil {
+		return err
+	}
 
 	// Configure the HTTP server
 	rootMux := mux.NewRouter()
+
+	// Build the layers of the service "onion" from the inside out
+	repository := postgres.NewRepo()
+	service := service.New(logger, repository)
+	endpoints := endpoints.New(service, logger, requestLatencyMetric)
+	httptransport.Handle(rootMux, endpoints, logger, requestCounterMetric, errorCounterMetric)
+	grpcServer := grpctransport.NewGRPCServer(endpoints, logger)
+
 	// Configure health checks
-	healthchecker := healthcheck.New()
+	healthchecker := utils.New()
 	healthchecker.AddReadinessChecks(readinessCheck)
 	rootMux.Handle(config.HTTPServer.ReadinessEndpoint, healthchecker.ReadinessHandler())
 	rootMux.Handle(config.HTTPServer.LivenessEndpoint, healthchecker.LivenessHandler())
 	// Configure metrics
 	rootMux.Handle("/metrics", promhttp.Handler())
-	// Configure REST API
-	subrouter := rootMux.PathPrefix("/api/v1").Subrouter()
-	subrouter.Handle("/hello", httpHandler)
 	// Start the HTTP server
 	httpServerAddr := fmt.Sprintf("0.0.0.0:%d", config.HTTPServer.Port)
 	// nolint: errcheck

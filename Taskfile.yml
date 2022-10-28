@@ -13,6 +13,7 @@ tasks:
   generate:
     cmds:
       - buf generate ./api/protobuf-spec/
+      - go generate -x ./...
 
   buf-lint:
     dir: ./api/protobuf-spec
