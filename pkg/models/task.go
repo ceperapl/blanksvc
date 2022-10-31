@@ -9,5 +9,5 @@ type Task struct {
 	Deadline    time.Time  `json:"deadline"`
 	CompletedAt *time.Time `json:"completedAt"`
 	CreatedAt   time.Time  `json:"createdAt"`
-	UpdatedAt   time.Time  `json:"updatedAt"`
+	UpdatedAt   *time.Time `json:"updatedAt"`
 }

@@ -6,12 +6,12 @@ import (
 	"net"
 	"net/http"
 	"os"
-	"time"
 
 	hellov1 "github.com/company/blanksvc/gen/proto/go/hello/v1"
 	"github.com/company/blanksvc/pkg/endpoints"
 	"github.com/company/blanksvc/pkg/metrics"
 	"github.com/company/blanksvc/pkg/repository/postgres"
+	"github.com/company/blanksvc/pkg/repository/postgres/transactions"
 	"github.com/company/blanksvc/pkg/service"
 	grpctransport "github.com/company/blanksvc/pkg/transport/grpc"
 	httptransport "github.com/company/blanksvc/pkg/transport/http"
@@ -21,7 +21,6 @@ import (
 
 	"github.com/go-kit/log"
 	"github.com/gorilla/mux"
-	_ "github.com/jackc/pgx/v4/stdlib"
 	"google.golang.org/grpc"
 )
 
@@ -43,19 +42,8 @@ func RunServer() error {
 	logger = log.With(logger, "ts", log.DefaultTimestampUTC)
 	logger = log.With(logger, "caller", log.DefaultCaller)
 
-	// Connect to Postgres with retry
-	var db *sql.DB
-	if err := utils.Retry(time.Second, 30, func() (stop bool) {
-		logger.Log("database", config.Postgres.DSN)
-		var errOpen error
-		if db, errOpen = sql.Open("postgres", config.Postgres.DSN); errOpen != nil {
-			return false
-		}
-		if err := db.Ping(); err != nil {
-			return false
-		}
-		return true
-	}); err != nil {
+	db, err := postgres.New(logger, config.Postgres.DSN)
+	if err != nil {
 		return err
 	}
 	defer db.Close()
@@ -65,11 +53,13 @@ func RunServer() error {
 		return err
 	}
 
+	txFactory := transactions.New(db)
+
 	// Configure the HTTP server
 	rootMux := mux.NewRouter()
 
 	// Build the layers of the service "onion" from the inside out
-	repository := postgres.NewRepo()
+	repository := postgres.NewRepo(txFactory)
 	service := service.New(logger, repository)
 	endpoints := endpoints.New(service, logger, requestLatencyMetric)
 	httptransport.Handle(rootMux, endpoints, logger, requestCounterMetric, errorCounterMetric)
@@ -77,7 +67,7 @@ func RunServer() error {
 
 	// Configure health checks
 	healthchecker := utils.New()
-	healthchecker.AddReadinessChecks(readinessCheck)
+	healthchecker.AddReadinessChecks(readinessCheck(db))
 	rootMux.Handle(config.HTTPServer.ReadinessEndpoint, healthchecker.ReadinessHandler())
 	rootMux.Handle(config.HTTPServer.LivenessEndpoint, healthchecker.LivenessHandler())
 	// Configure metrics
@@ -117,7 +107,8 @@ func RunServer() error {
 	return nil
 }
 
-func readinessCheck() error {
-	// return errors.New("error")
-	return nil
+func readinessCheck(db *sql.DB) utils.Check {
+	return func() error {
+		return db.Ping()
+	}
 }

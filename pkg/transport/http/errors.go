@@ -8,6 +8,7 @@ import (
 	"strconv"
 
 	"github.com/company/blanksvc/pkg/metrics"
+	"github.com/company/blanksvc/pkg/repository/postgres"
 	"github.com/company/blanksvc/pkg/service"
 	httptransport "github.com/go-kit/kit/transport/http"
 	"github.com/prometheus/client_golang/prometheus"
@@ -37,6 +38,8 @@ func errorToCode(err error) int {
 	switch {
 	case errors.Is(err, service.ErrEmptyString):
 		return http.StatusBadRequest
+	case errors.Is(err, postgres.ErrTaskNotFound):
+		return http.StatusNotFound
 	}
 	return http.StatusInternalServerError
 }

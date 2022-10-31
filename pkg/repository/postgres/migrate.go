@@ -3,10 +3,12 @@ package postgres
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	bindata "github.com/golang-migrate/migrate/v4/source/go_bindata"
+	"github.com/pkg/errors"
 )
 
 // Migrate applies migrations files to dsn.
@@ -26,7 +28,7 @@ func Migrate(dsn string) error {
 
 	err = m.Up()
 	// check on os.ErrNotExist is allowing service to rollback
-	if err != nil {
+	if err != nil && !(errors.Is(err, migrate.ErrNoChange) || errors.Is(err, os.ErrNotExist)) {
 		return fmt.Errorf("up: %w", err)
 	}
 	return nil
