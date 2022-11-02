@@ -1,44 +1,58 @@
 package metrics
 
 import (
-	"context"
-	"net/http"
-	"strconv"
-
-	httptransport "github.com/go-kit/kit/transport/http"
 	prometheus "github.com/prometheus/client_golang/prometheus"
 )
 
 var (
 	MetricsNamespace = "blanksvc"
 
-	MetricsEndpointLabel     = "endpoint"
-	MetricsMethodLabel       = "method"
+	MetricsEndpointNameLabel = "endpoint_name"
 	MetricsResponseCodeLabel = "response_code"
 	MetricsErrorTypeLabel    = "error_type"
 	MetricsErrorKindLabel    = "error_kind"
 )
 
-func NewRequestLatencyMetric() *prometheus.HistogramVec {
+type RequestLatencyMetric struct {
+	metric *prometheus.HistogramVec
+}
+
+type RequestCounterMetric struct {
+	metric *prometheus.CounterVec
+}
+
+func NewRequestLatencyMetric() RequestLatencyMetric {
 	latencyHistogram := prometheus.NewHistogramVec(prometheus.HistogramOpts{
 		Namespace: MetricsNamespace,
 		Subsystem: "service",
 		Name:      "request_latency",
 		Help:      "Latency of request processing",
-	}, []string{MetricsEndpointLabel, MetricsMethodLabel})
+	}, []string{MetricsEndpointNameLabel})
 	prometheus.DefaultRegisterer.MustRegister(latencyHistogram)
-	return latencyHistogram
+	return RequestLatencyMetric{latencyHistogram}
 }
 
-func NewRequestCounterMetric() *prometheus.CounterVec {
+func (r *RequestLatencyMetric) SetLabels(metricsEndpointNameLabel string) prometheus.Observer {
+	return r.metric.With(prometheus.Labels{
+		MetricsEndpointNameLabel: metricsEndpointNameLabel,
+	})
+}
+
+func NewRequestCounterMetric() RequestCounterMetric {
 	requestCounter := prometheus.NewCounterVec(prometheus.CounterOpts{
 		Namespace: MetricsNamespace,
 		Subsystem: "service",
 		Name:      "requests_total",
 		Help:      "Amount of requests",
-	}, []string{MetricsEndpointLabel, MetricsMethodLabel, MetricsResponseCodeLabel})
+	}, []string{MetricsEndpointNameLabel})
 	prometheus.DefaultRegisterer.MustRegister(requestCounter)
-	return requestCounter
+	return RequestCounterMetric{requestCounter}
+}
+
+func (r *RequestCounterMetric) SetLabels(metricsEndpointNameLabel string) prometheus.Counter {
+	return r.metric.With(prometheus.Labels{
+		MetricsEndpointNameLabel: metricsEndpointNameLabel,
+	})
 }
 
 func NewErrorCounterMetric() *prometheus.CounterVec {
@@ -50,14 +64,4 @@ func NewErrorCounterMetric() *prometheus.CounterVec {
 	}, []string{MetricsErrorTypeLabel, MetricsErrorKindLabel, MetricsResponseCodeLabel})
 	prometheus.DefaultRegisterer.MustRegister(errorCounter)
 	return errorCounter
-}
-
-func MetricsOption(requestCounterMetric *prometheus.CounterVec) httptransport.ServerFinalizerFunc {
-	return func(ctx context.Context, code int, _ *http.Request) {
-		requestCounterMetric.With(prometheus.Labels{
-			MetricsEndpointLabel:     ctx.Value(httptransport.ContextKeyRequestPath).(string),
-			MetricsMethodLabel:       ctx.Value(httptransport.ContextKeyRequestMethod).(string),
-			MetricsResponseCodeLabel: strconv.Itoa(code),
-		}).Inc()
-	}
 }

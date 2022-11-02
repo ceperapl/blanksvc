@@ -8,7 +8,7 @@ message Task {
     string id = 1;
     string name = 2;
     string description = 3;
-    google.protobuf.Timestamp deadline = 4;
+    string deadline = 4;
     google.protobuf.Timestamp completed_at = 5;
 	google.protobuf.Timestamp created_at = 6;
 	google.protobuf.Timestamp updated_at = 7;
@@ -51,19 +51,19 @@ message UpdateTaskResponse {
 }
 
 message CompleteTaskRequest {
-    Task task = 1;
+    string id = 1;
 }
 
 message CompleteTaskResponse {
-    Task task = 1;
+
 }
 
 message UncompleteTaskRequest {
-    Task task = 1;
+    string id = 1;
 }
 
 message UncompleteTaskResponse {
-    Task task = 1;
+
 }
 
 message DeleteTaskRequest {

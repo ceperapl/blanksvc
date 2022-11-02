@@ -13,7 +13,7 @@ import (
 
 type Service interface {
 	Hello(name string) (string, error)
-	ListTasks(filter string, sort string, itemsOnPage int, page int) ([]models.Task, int64, error)
+	ListTasks(filter string, sort string, itemsOnPage int, page int) ([]*models.Task, int64, error)
 	GetTask(id string) (*models.Task, error)
 	CreateTask(task *models.Task) (*models.Task, error)
 	UpdateTask(task *models.Task) (*models.Task, error)
@@ -42,7 +42,7 @@ func (s service) Hello(name string) (string, error) {
 	return fmt.Sprintf("Hello %s", name), nil
 }
 
-func (s service) ListTasks(filter string, sort string, itemsOnPage int, page int) ([]models.Task, int64, error) {
+func (s service) ListTasks(filter string, sort string, itemsOnPage int, page int) ([]*models.Task, int64, error) {
 	taskFilter, err := filtering.NewFilter(filter, models.Task{})
 	if err != nil {
 		return nil, 0, err

@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/company/blanksvc/pkg/endpoints/middleware"
+	"github.com/company/blanksvc/pkg/metrics"
 	"github.com/company/blanksvc/pkg/models"
 	"github.com/company/blanksvc/pkg/service"
 	"github.com/prometheus/client_golang/prometheus"
@@ -28,8 +29,8 @@ type ListTasksRequest struct {
 }
 
 type ListTaskResponse struct {
-	Tasks []models.Task `json:"tasks"`
-	Count int64         `json:"count"`
+	Tasks []*models.Task `json:"tasks"`
+	Count int64          `json:"count"`
 }
 
 type GetTaskRequest struct {
@@ -59,44 +60,44 @@ type Endpoints struct {
 	DeleteTaskEndpoint     endpoint.Endpoint
 }
 
-func New(svc service.Service, logger log.Logger, requestLatencyMetric *prometheus.HistogramVec) Endpoints {
+func New(svc service.Service, logger log.Logger, requestLatency metrics.RequestLatencyMetric, requestCounter metrics.RequestCounterMetric, errorCounter *prometheus.CounterVec) Endpoints {
 	helloEndpoint := middleware.LoggingMiddleware(log.With(logger, "method", "Hello"))(
-		middleware.MetricsMiddleware(requestLatencyMetric)(
+		middleware.MetricsMiddleware(requestLatency.SetLabels("Hello"), requestCounter.SetLabels("Hello"), errorCounter)(
 			MakeHelloEndpoint(svc),
 		),
 	)
 	listTasksEndpoint := middleware.LoggingMiddleware(log.With(logger, "method", "ListTasks"))(
-		middleware.MetricsMiddleware(requestLatencyMetric)(
+		middleware.MetricsMiddleware(requestLatency.SetLabels("ListTasks"), requestCounter.SetLabels("ListTasks"), errorCounter)(
 			MakeListTasksEndpoint(svc),
 		),
 	)
 	getTaskEndpoint := middleware.LoggingMiddleware(log.With(logger, "method", "GetTask"))(
-		middleware.MetricsMiddleware(requestLatencyMetric)(
+		middleware.MetricsMiddleware(requestLatency.SetLabels("GetTask"), requestCounter.SetLabels("GetTask"), errorCounter)(
 			MakeGetTaskEndpoint(svc),
 		),
 	)
 	createTaskEndpoint := middleware.LoggingMiddleware(log.With(logger, "method", "CreateTask"))(
-		middleware.MetricsMiddleware(requestLatencyMetric)(
+		middleware.MetricsMiddleware(requestLatency.SetLabels("CreateTask"), requestCounter.SetLabels("CreateTask"), errorCounter)(
 			MakeCreateTaskEndpoint(svc),
 		),
 	)
 	updateTaskEndpoint := middleware.LoggingMiddleware(log.With(logger, "method", "UpdateTask"))(
-		middleware.MetricsMiddleware(requestLatencyMetric)(
+		middleware.MetricsMiddleware(requestLatency.SetLabels("UpdateTask"), requestCounter.SetLabels("UpdateTask"), errorCounter)(
 			MakeUpdateTaskEndpoint(svc),
 		),
 	)
 	completeTaskEndpoint := middleware.LoggingMiddleware(log.With(logger, "method", "CompleteTask"))(
-		middleware.MetricsMiddleware(requestLatencyMetric)(
+		middleware.MetricsMiddleware(requestLatency.SetLabels("CompleteTask"), requestCounter.SetLabels("CompleteTask"), errorCounter)(
 			MakeCompleteTaskEndpoint(svc),
 		),
 	)
 	uncompleteTaskEndpoint := middleware.LoggingMiddleware(log.With(logger, "method", "UncompleteTask"))(
-		middleware.MetricsMiddleware(requestLatencyMetric)(
+		middleware.MetricsMiddleware(requestLatency.SetLabels("UncompleteTask"), requestCounter.SetLabels("UncompleteTask"), errorCounter)(
 			MakeUncompleteTaskEndpoint(svc),
 		),
 	)
 	deleteTaskEndpoint := middleware.LoggingMiddleware(log.With(logger, "method", "DeleteTask"))(
-		middleware.MetricsMiddleware(requestLatencyMetric)(
+		middleware.MetricsMiddleware(requestLatency.SetLabels("DeleteTask"), requestCounter.SetLabels("DeleteTask"), errorCounter)(
 			MakeDeleteTaskEndpoint(svc),
 		),
 	)
@@ -147,8 +148,8 @@ func MakeGetTaskEndpoint(svc service.Service) endpoint.Endpoint {
 
 func MakeCreateTaskEndpoint(svc service.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (response interface{}, err error) {
-		req := request.(models.Task)
-		task, err := svc.CreateTask(&req)
+		req := request.(*models.Task)
+		task, err := svc.CreateTask(req)
 		if err != nil {
 			return nil, err
 		}
@@ -158,8 +159,8 @@ func MakeCreateTaskEndpoint(svc service.Service) endpoint.Endpoint {
 
 func MakeUpdateTaskEndpoint(svc service.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (response interface{}, err error) {
-		req := request.(models.Task)
-		task, err := svc.UpdateTask(&req)
+		req := request.(*models.Task)
+		task, err := svc.UpdateTask(req)
 		if err != nil {
 			return nil, err
 		}
@@ -173,7 +174,7 @@ func MakeCompleteTaskEndpoint(svc service.Service) endpoint.Endpoint {
 		if err := svc.CompleteTask(req.ID); err != nil {
 			return nil, err
 		}
-		return struct{}{}, nil
+		return nil, nil
 	}
 }
 
@@ -183,7 +184,7 @@ func MakeUncompleteTaskEndpoint(svc service.Service) endpoint.Endpoint {
 		if err := svc.UncompleteTask(req.ID); err != nil {
 			return nil, err
 		}
-		return struct{}{}, nil
+		return nil, nil
 	}
 }
 
@@ -193,6 +194,6 @@ func MakeDeleteTaskEndpoint(svc service.Service) endpoint.Endpoint {
 		if err := svc.DeleteTask(req.ID); err != nil {
 			return nil, err
 		}
-		return struct{}{}, nil
+		return nil, nil
 	}
 }

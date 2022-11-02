@@ -1,0 +1,27 @@
+{
+    "version": "1.0.0",
+    "configurations": [
+        {
+            "name": "blanksvc",
+            "type": "go",
+            "request": "launch",
+            "mode": "auto",
+            "program": "${workspaceFolder}",
+            "env": {
+                "BLANK_POSTGRES_DSN": "postgres://user:password@localhost/blanksvc?sslmode=disable",
+            },
+            "args": []
+        }
+    ]
+}
+
+// // Execute this command to run postgres locally:
+// docker run                                       \
+//   --rm                                           \
+//   -p 5432:5432                                   \
+//   -e POSTGRES_DB=blanksvc                        \
+//   -e POSTGRES_USER=user                          \
+//   -e POSTGRES_PASSWORD=password                  \
+//   --tmpfs /var/lib/postgresql/data               \
+//   --name pg                                      \
+//   "postgres:10.5"

@@ -8,10 +8,8 @@ import (
 	"net/http"
 
 	"github.com/company/blanksvc/pkg/endpoints"
-	"github.com/company/blanksvc/pkg/metrics"
 	"github.com/company/blanksvc/pkg/models"
 	"github.com/gorilla/mux"
-	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/go-kit/kit/endpoint"
 	"github.com/go-kit/kit/transport"
@@ -24,14 +22,11 @@ const (
 	defaultPage        = 0
 )
 
-func Handle(mux *mux.Router, endpoints endpoints.Endpoints, logger log.Logger, requestCounterMetric, errorCounterMetric *prometheus.CounterVec) *mux.Router {
+func Handle(mux *mux.Router, endpoints endpoints.Endpoints, logger log.Logger) *mux.Router {
 	options := []httptransport.ServerOption{
-		httptransport.ServerErrorEncoder(errorEncoder(errorCounterMetric)),
+		httptransport.ServerErrorEncoder(errorEncoder),
 		httptransport.ServerErrorHandler(transport.NewLogErrorHandler(logger)),
 		httptransport.ServerBefore(httptransport.PopulateRequestContext),
-		httptransport.ServerFinalizer(
-			metrics.MetricsOption(requestCounterMetric),
-		),
 	}
 
 	subRouter := mux.PathPrefix("/api/v1").Subrouter()
@@ -39,56 +34,56 @@ func Handle(mux *mux.Router, endpoints endpoints.Endpoints, logger log.Logger, r
 	subRouter.Handle("/hello", httptransport.NewServer(
 		endpoints.HelloEndpoint,
 		decodeHTTPHelloRequest,
-		encodeHTTPGenericResponse(errorCounterMetric),
+		encodeHTTPGenericResponse,
 		options...,
 	)).Methods(http.MethodGet)
 
 	subRouter.Handle("/tasks", httptransport.NewServer(
 		endpoints.ListTasksEndpoint,
 		decodeHTTPListTasksRequest,
-		encodeHTTPGenericResponse(errorCounterMetric),
+		encodeHTTPGenericResponse,
 		options...,
 	)).Methods(http.MethodGet)
 
 	subRouter.Handle("/tasks/{id}", httptransport.NewServer(
 		endpoints.GetTaskEndpoint,
 		decodeHTTPGetTaskRequest,
-		encodeHTTPGenericResponse(errorCounterMetric),
+		encodeHTTPGenericResponse,
 		options...,
 	)).Methods(http.MethodGet)
 
 	subRouter.Handle("/tasks", httptransport.NewServer(
 		endpoints.CreateTaskEndpoint,
 		decodeHTTPCreateTaskRequest,
-		encodeHTTPGenericResponse(errorCounterMetric),
+		encodeHTTPGenericResponse,
 		options...,
 	)).Methods(http.MethodPost)
 
 	subRouter.Handle("/tasks", httptransport.NewServer(
 		endpoints.UpdateTaskEndpoint,
 		decodeHTTPUpdateTaskRequest,
-		encodeHTTPGenericResponse(errorCounterMetric),
+		encodeHTTPGenericResponse,
 		options...,
 	)).Methods(http.MethodPut)
 
 	subRouter.Handle("/tasks/{id}/complete", httptransport.NewServer(
 		endpoints.CompleteTaskEndpoint,
 		decodeHTTPCompleteTaskRequest,
-		encodeHTTPGenericResponse(errorCounterMetric),
+		encodeHTTPGenericResponse,
 		options...,
 	)).Methods(http.MethodPost)
 
 	subRouter.Handle("/tasks/{id}/uncomplete", httptransport.NewServer(
 		endpoints.UncompleteTaskEndpoint,
 		decodeHTTPUncompleteTaskRequest,
-		encodeHTTPGenericResponse(errorCounterMetric),
+		encodeHTTPGenericResponse,
 		options...,
 	)).Methods(http.MethodPost)
 
 	subRouter.Handle("/tasks/{id}", httptransport.NewServer(
 		endpoints.DeleteTaskEndpoint,
 		decodeHTTPDeleteTaskRequest,
-		encodeHTTPGenericResponse(errorCounterMetric),
+		encodeHTTPGenericResponse,
 		options...,
 	)).Methods(http.MethodDelete)
 
@@ -130,7 +125,7 @@ func decodeHTTPGetTaskRequest(_ context.Context, r *http.Request) (interface{}, 
 }
 
 func decodeHTTPCreateTaskRequest(_ context.Context, r *http.Request) (interface{}, error) {
-	var task models.Task
+	var task *models.Task
 	if err := json.NewDecoder(r.Body).Decode(&task); err != nil {
 		return nil, err
 	}
@@ -138,7 +133,7 @@ func decodeHTTPCreateTaskRequest(_ context.Context, r *http.Request) (interface{
 }
 
 func decodeHTTPUpdateTaskRequest(_ context.Context, r *http.Request) (interface{}, error) {
-	var task models.Task
+	var task *models.Task
 	if err := json.NewDecoder(r.Body).Decode(&task); err != nil {
 		return nil, err
 	}
@@ -160,13 +155,11 @@ func decodeHTTPDeleteTaskRequest(_ context.Context, r *http.Request) (interface{
 	return endpoints.DeleteTaskRequest{ID: id}, nil
 }
 
-func encodeHTTPGenericResponse(errorCounterMetric *prometheus.CounterVec) httptransport.EncodeResponseFunc {
-	return func(ctx context.Context, w http.ResponseWriter, response interface{}) error {
-		if f, ok := response.(endpoint.Failer); ok && f.Failed() != nil {
-			errorEncoder(errorCounterMetric)(ctx, f.Failed(), w)
-			return nil
-		}
-		w.Header().Set("Content-Type", "application/json; charset=utf-8")
-		return json.NewEncoder(w).Encode(response)
+func encodeHTTPGenericResponse(ctx context.Context, w http.ResponseWriter, response interface{}) error {
+	if f, ok := response.(endpoint.Failer); ok && f.Failed() != nil {
+		errorEncoder(ctx, f.Failed(), w)
+		return nil
 	}
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	return json.NewEncoder(w).Encode(response)
 }

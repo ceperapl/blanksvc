@@ -8,6 +8,7 @@ import (
 	"os"
 
 	hellov1 "github.com/company/blanksvc/gen/proto/go/hello/v1"
+	taskv1 "github.com/company/blanksvc/gen/proto/go/task/v1"
 	"github.com/company/blanksvc/pkg/endpoints"
 	"github.com/company/blanksvc/pkg/metrics"
 	"github.com/company/blanksvc/pkg/repository/postgres"
@@ -61,8 +62,8 @@ func RunServer() error {
 	// Build the layers of the service "onion" from the inside out
 	repository := postgres.NewRepo(txFactory)
 	service := service.New(logger, repository)
-	endpoints := endpoints.New(service, logger, requestLatencyMetric)
-	httptransport.Handle(rootMux, endpoints, logger, requestCounterMetric, errorCounterMetric)
+	endpoints := endpoints.New(service, logger, requestLatencyMetric, requestCounterMetric, errorCounterMetric)
+	httptransport.Handle(rootMux, endpoints, logger)
 	grpcServer := grpctransport.NewGRPCServer(endpoints, logger)
 
 	// Configure health checks
@@ -90,6 +91,7 @@ func RunServer() error {
 	}
 	baseServer := grpc.NewServer()
 	hellov1.RegisterHelloServiceServer(baseServer, grpcServer)
+	taskv1.RegisterTaskServiceServer(baseServer, grpcServer)
 	// Start the GRPC server
 	// nolint: errcheck
 	logger.Log("transport", "GRPC", "addr", grpcServerAddr)
