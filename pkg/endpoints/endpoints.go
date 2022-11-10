@@ -7,7 +7,7 @@ import (
 	"github.com/company/blanksvc/pkg/metrics"
 	"github.com/company/blanksvc/pkg/models"
 	"github.com/company/blanksvc/pkg/service"
-	"github.com/prometheus/client_golang/prometheus"
+	kitmetrics "github.com/go-kit/kit/metrics"
 
 	"github.com/go-kit/kit/endpoint"
 	"github.com/go-kit/log"
@@ -60,44 +60,76 @@ type Endpoints struct {
 	DeleteTaskEndpoint     endpoint.Endpoint
 }
 
-func New(svc service.Service, logger log.Logger, requestLatency metrics.RequestLatencyMetric, requestCounter metrics.RequestCounterMetric, errorCounter *prometheus.CounterVec) Endpoints {
+func New(svc service.Service, logger log.Logger, requestLatency kitmetrics.Histogram, requestCounter kitmetrics.Counter, errorCounter kitmetrics.Counter) Endpoints {
 	helloEndpoint := middleware.LoggingMiddleware(log.With(logger, "method", "Hello"))(
-		middleware.MetricsMiddleware(requestLatency.SetLabels("Hello"), requestCounter.SetLabels("Hello"), errorCounter)(
+		middleware.MetricsMiddleware(
+			requestLatency.With(metrics.MetricsEndpointNameLabel, "Hello"),
+			requestCounter.With(metrics.MetricsEndpointNameLabel, "Hello"),
+			errorCounter,
+		)(
 			MakeHelloEndpoint(svc),
 		),
 	)
 	listTasksEndpoint := middleware.LoggingMiddleware(log.With(logger, "method", "ListTasks"))(
-		middleware.MetricsMiddleware(requestLatency.SetLabels("ListTasks"), requestCounter.SetLabels("ListTasks"), errorCounter)(
+		middleware.MetricsMiddleware(
+			requestLatency.With(metrics.MetricsEndpointNameLabel, "ListTasks"),
+			requestCounter.With(metrics.MetricsEndpointNameLabel, "ListTasks"),
+			errorCounter,
+		)(
 			MakeListTasksEndpoint(svc),
 		),
 	)
 	getTaskEndpoint := middleware.LoggingMiddleware(log.With(logger, "method", "GetTask"))(
-		middleware.MetricsMiddleware(requestLatency.SetLabels("GetTask"), requestCounter.SetLabels("GetTask"), errorCounter)(
+		middleware.MetricsMiddleware(
+			requestLatency.With(metrics.MetricsEndpointNameLabel, "GetTask"),
+			requestCounter.With(metrics.MetricsEndpointNameLabel, "GetTask"),
+			errorCounter,
+		)(
 			MakeGetTaskEndpoint(svc),
 		),
 	)
 	createTaskEndpoint := middleware.LoggingMiddleware(log.With(logger, "method", "CreateTask"))(
-		middleware.MetricsMiddleware(requestLatency.SetLabels("CreateTask"), requestCounter.SetLabels("CreateTask"), errorCounter)(
+		middleware.MetricsMiddleware(
+			requestLatency.With(metrics.MetricsEndpointNameLabel, "CreateTask"),
+			requestCounter.With(metrics.MetricsEndpointNameLabel, "CreateTask"),
+			errorCounter,
+		)(
 			MakeCreateTaskEndpoint(svc),
 		),
 	)
 	updateTaskEndpoint := middleware.LoggingMiddleware(log.With(logger, "method", "UpdateTask"))(
-		middleware.MetricsMiddleware(requestLatency.SetLabels("UpdateTask"), requestCounter.SetLabels("UpdateTask"), errorCounter)(
+		middleware.MetricsMiddleware(
+			requestLatency.With(metrics.MetricsEndpointNameLabel, "UpdateTask"),
+			requestCounter.With(metrics.MetricsEndpointNameLabel, "UpdateTask"),
+			errorCounter,
+		)(
 			MakeUpdateTaskEndpoint(svc),
 		),
 	)
 	completeTaskEndpoint := middleware.LoggingMiddleware(log.With(logger, "method", "CompleteTask"))(
-		middleware.MetricsMiddleware(requestLatency.SetLabels("CompleteTask"), requestCounter.SetLabels("CompleteTask"), errorCounter)(
+		middleware.MetricsMiddleware(
+			requestLatency.With(metrics.MetricsEndpointNameLabel, "CompleteTask"),
+			requestCounter.With(metrics.MetricsEndpointNameLabel, "CompleteTask"),
+			errorCounter,
+		)(
 			MakeCompleteTaskEndpoint(svc),
 		),
 	)
 	uncompleteTaskEndpoint := middleware.LoggingMiddleware(log.With(logger, "method", "UncompleteTask"))(
-		middleware.MetricsMiddleware(requestLatency.SetLabels("UncompleteTask"), requestCounter.SetLabels("UncompleteTask"), errorCounter)(
+		middleware.MetricsMiddleware(
+			requestLatency.With(metrics.MetricsEndpointNameLabel, "UncompleteTask"),
+			requestCounter.With(metrics.MetricsEndpointNameLabel, "UncompleteTask"),
+			errorCounter,
+		)(
 			MakeUncompleteTaskEndpoint(svc),
 		),
 	)
 	deleteTaskEndpoint := middleware.LoggingMiddleware(log.With(logger, "method", "DeleteTask"))(
-		middleware.MetricsMiddleware(requestLatency.SetLabels("DeleteTask"), requestCounter.SetLabels("DeleteTask"), errorCounter)(
+		middleware.MetricsMiddleware(
+			requestLatency.With(metrics.MetricsEndpointNameLabel, "DeleteTask"),
+			requestCounter.With(metrics.MetricsEndpointNameLabel, "DeleteTask"),
+			errorCounter,
+		)(
 			MakeDeleteTaskEndpoint(svc),
 		),
 	)

@@ -22,6 +22,8 @@ func ErrorKind(err error) string {
 	switch {
 	case errors.Is(err, service.ErrEmptyString):
 		return "ErrEmptyString"
+	case errors.Is(err, postgres.ErrTaskNotFound):
+		return "ErrTaskNotFound"
 	default:
 		return "ErrUndefined"
 	}

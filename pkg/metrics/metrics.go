@@ -1,7 +1,9 @@
 package metrics
 
 import (
-	prometheus "github.com/prometheus/client_golang/prometheus"
+	"github.com/go-kit/kit/metrics"
+	"github.com/go-kit/kit/metrics/prometheus"
+	kitprometheus "github.com/prometheus/client_golang/prometheus"
 )
 
 var (
@@ -13,55 +15,38 @@ var (
 	MetricsErrorKindLabel    = "error_kind"
 )
 
-type RequestLatencyMetric struct {
-	metric *prometheus.HistogramVec
+type Metrics struct {
+	RequestLatency metrics.Histogram
+	RequestCounter metrics.Counter
+	ErrorCounter   metrics.Counter
 }
 
-type RequestCounterMetric struct {
-	metric *prometheus.CounterVec
-}
-
-func NewRequestLatencyMetric() RequestLatencyMetric {
-	latencyHistogram := prometheus.NewHistogramVec(prometheus.HistogramOpts{
+func NewRequestLatencyMetric() metrics.Histogram {
+	latencyHistogram := prometheus.NewHistogramFrom(kitprometheus.HistogramOpts{
 		Namespace: MetricsNamespace,
 		Subsystem: "service",
 		Name:      "request_latency",
 		Help:      "Latency of request processing",
 	}, []string{MetricsEndpointNameLabel})
-	prometheus.DefaultRegisterer.MustRegister(latencyHistogram)
-	return RequestLatencyMetric{latencyHistogram}
+	return latencyHistogram
 }
 
-func (r *RequestLatencyMetric) SetLabels(metricsEndpointNameLabel string) prometheus.Observer {
-	return r.metric.With(prometheus.Labels{
-		MetricsEndpointNameLabel: metricsEndpointNameLabel,
-	})
-}
-
-func NewRequestCounterMetric() RequestCounterMetric {
-	requestCounter := prometheus.NewCounterVec(prometheus.CounterOpts{
+func NewRequestCounterMetric() metrics.Counter {
+	requestCounter := prometheus.NewCounterFrom(kitprometheus.CounterOpts{
 		Namespace: MetricsNamespace,
 		Subsystem: "service",
 		Name:      "requests_total",
 		Help:      "Amount of requests",
 	}, []string{MetricsEndpointNameLabel})
-	prometheus.DefaultRegisterer.MustRegister(requestCounter)
-	return RequestCounterMetric{requestCounter}
+	return requestCounter
 }
 
-func (r *RequestCounterMetric) SetLabels(metricsEndpointNameLabel string) prometheus.Counter {
-	return r.metric.With(prometheus.Labels{
-		MetricsEndpointNameLabel: metricsEndpointNameLabel,
-	})
-}
-
-func NewErrorCounterMetric() *prometheus.CounterVec {
-	errorCounter := prometheus.NewCounterVec(prometheus.CounterOpts{
+func NewErrorCounterMetric() metrics.Counter {
+	errorCounter := prometheus.NewCounterFrom(kitprometheus.CounterOpts{
 		Namespace: MetricsNamespace,
 		Subsystem: "service",
 		Name:      "errors_total",
 		Help:      "Amount of errors",
 	}, []string{MetricsErrorTypeLabel, MetricsErrorKindLabel, MetricsResponseCodeLabel})
-	prometheus.DefaultRegisterer.MustRegister(errorCounter)
 	return errorCounter
 }

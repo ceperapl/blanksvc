@@ -33,9 +33,9 @@ func RunServer() error {
 	config := NewConfig()
 
 	// Create metrics
-	requestLatencyMetric := metrics.NewRequestLatencyMetric()
-	requestCounterMetric := metrics.NewRequestCounterMetric()
-	errorCounterMetric := metrics.NewErrorCounterMetric()
+	requestLatency := metrics.NewRequestLatencyMetric()
+	requestCounter := metrics.NewRequestCounterMetric()
+	errorCounter := metrics.NewErrorCounterMetric()
 
 	// Create a single logger, which we'll use and give to other components.
 	var logger log.Logger
@@ -62,7 +62,7 @@ func RunServer() error {
 	// Build the layers of the service "onion" from the inside out
 	repository := postgres.NewRepo(txFactory)
 	service := service.New(logger, repository)
-	endpoints := endpoints.New(service, logger, requestLatencyMetric, requestCounterMetric, errorCounterMetric)
+	endpoints := endpoints.New(service, logger, requestLatency, requestCounter, errorCounter)
 	httptransport.Handle(rootMux, endpoints, logger)
 	grpcServer := grpctransport.NewGRPCServer(endpoints, logger)
 
