@@ -2,6 +2,7 @@ package transactions
 
 import (
 	"database/sql"
+	"fmt"
 )
 
 // TxFactory - transactions factory
@@ -39,7 +40,7 @@ func New(db *sql.DB) TxFactory {
 func (f *txFactory) Begin() (Tx, error) {
 	tx, err := f.db.Begin()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("start transaction: %w", err)
 	}
 
 	return NewTx(tx), err

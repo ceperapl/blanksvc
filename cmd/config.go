@@ -72,11 +72,16 @@ func NewConfig() Config {
 	config.Postgres.DSN = viper.GetString(postgresDSNEnv)
 
 	// Init config via flags
-	pflag.Uint16Var(&config.HTTPServer.Port, "httpserver.port", config.HTTPServer.Port, fmt.Sprintf("HTTP Server port; env: %s", httpServerPortEnv))
-	pflag.StringVar(&config.HTTPServer.ReadinessEndpoint, "httpserver.readiness", config.HTTPServer.ReadinessEndpoint, fmt.Sprintf("HTTP Server readiness endpoint name; env: %s", httpReadinessEndpointEnv))
-	pflag.StringVar(&config.HTTPServer.LivenessEndpoint, "httpserver.liveness", config.HTTPServer.LivenessEndpoint, fmt.Sprintf("HTTP Server liveness endpoint name; env: %s", httpLivenessEndpointEnv))
-	pflag.Uint16Var(&config.GRPCServer.Port, "grpcserver.port", config.GRPCServer.Port, fmt.Sprintf("gRPC Server port; env: %s", grpcServerPortEnv))
-	pflag.StringVar(&config.Postgres.DSN, "postgres.dsn", config.Postgres.DSN, fmt.Sprintf("Postgres DSТ; env: %s", postgresDSNEnv))
+	pflag.Uint16Var(&config.HTTPServer.Port, "httpserver.port", config.HTTPServer.Port,
+		fmt.Sprintf("HTTP Server port; env: %s", httpServerPortEnv))
+	pflag.StringVar(&config.HTTPServer.ReadinessEndpoint, "httpserver.readiness", config.HTTPServer.ReadinessEndpoint,
+		fmt.Sprintf("HTTP Server readiness endpoint name; env: %s", httpReadinessEndpointEnv))
+	pflag.StringVar(&config.HTTPServer.LivenessEndpoint, "httpserver.liveness", config.HTTPServer.LivenessEndpoint,
+		fmt.Sprintf("HTTP Server liveness endpoint name; env: %s", httpLivenessEndpointEnv))
+	pflag.Uint16Var(&config.GRPCServer.Port, "grpcserver.port", config.GRPCServer.Port,
+		fmt.Sprintf("gRPC Server port; env: %s", grpcServerPortEnv))
+	pflag.StringVar(&config.Postgres.DSN, "postgres.dsn", config.Postgres.DSN,
+		fmt.Sprintf("Postgres DSТ; env: %s", postgresDSNEnv))
 
 	pflag.Parse()
 

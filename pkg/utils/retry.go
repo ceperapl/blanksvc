@@ -7,7 +7,7 @@ import (
 
 type RetryFunc func() (stop bool, err error)
 
-// Retry run function until true
+// Retry runs function until true
 func Retry(operation string, interval time.Duration, maxAttempts int, doFunc RetryFunc) error {
 	var err error
 	ticker := time.NewTicker(interval)

@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/golang-migrate/migrate/v4"
+	// nolint: revive
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	bindata "github.com/golang-migrate/migrate/v4/source/go_bindata"
 	"github.com/pkg/errors"

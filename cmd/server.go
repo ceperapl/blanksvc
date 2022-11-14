@@ -15,10 +15,10 @@ import (
 	"github.com/company/blanksvc/pkg/service"
 	grpctransport "github.com/company/blanksvc/pkg/transport/grpc"
 	httptransport "github.com/company/blanksvc/pkg/transport/http"
+	"github.com/company/blanksvc/pkg/utils"
 
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
-	"github.com/go-kit/log"
 	"github.com/gorilla/mux"
 	"google.golang.org/grpc"
 )
@@ -30,20 +30,17 @@ func RunServer() error {
 	config := NewConfig()
 
 	// Create a single logger, which we'll use and give to other components.
-	var logger log.Logger
-	logger = log.NewLogfmtLogger(os.Stderr)
-	logger = log.With(logger, "ts", log.DefaultTimestampUTC)
-	logger = log.With(logger, "caller", log.DefaultCaller)
+	logger := utils.NewLogger(os.Stdout)
 
 	db, err := postgres.New(logger, config.Postgres.DSN)
 	if err != nil {
-		return err
+		return fmt.Errorf("postgres db creation: %w", err)
 	}
 	defer db.Close()
 
 	// Migrate DB
-	if err := postgres.Migrate(config.Postgres.DSN); err != nil {
-		return err
+	if migrateErr := postgres.Migrate(config.Postgres.DSN); err != nil {
+		return fmt.Errorf("migrate db: %w", migrateErr)
 	}
 
 	txFactory := transactions.New(db)
@@ -79,7 +76,7 @@ func RunServer() error {
 	if err != nil {
 		// nolint: errcheck
 		logger.Log("transport", "gRPC", "during", "Listen", "err", err)
-		return err
+		return fmt.Errorf("make listener: %w", err)
 	}
 	baseServer := grpc.NewServer()
 	taskv1.RegisterTaskServiceServer(baseServer, grpcServer)
@@ -102,6 +99,9 @@ func RunServer() error {
 
 func readinessCheck(db *sql.DB) httptransport.Check {
 	return func() error {
-		return db.Ping()
+		if err := db.Ping(); err != nil {
+			return fmt.Errorf("ping database: %w", err)
+		}
+		return nil
 	}
 }

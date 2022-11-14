@@ -12,6 +12,16 @@ import (
 	"golang.org/x/text/language"
 )
 
+var (
+	ErrFilterStringIsEmpty    = errors.New("sort string is empty")
+	ErrInvalidConditionType   = errors.New("invalid condition type")
+	ErrInvalidConditionFormat = errors.New("invalid condition format")
+	ErrInvalidCondition       = errors.New("invalid condition")
+	ErrFieldTypeNotSupported  = errors.New("the type of the field is not supported")
+	ErrStructType             = errors.New("error structure type")
+	ErrFieldNotFound          = errors.New("structure doesn't have the field")
+)
+
 type Filter struct {
 	Conditions []Condition
 }
@@ -54,13 +64,13 @@ func condTypeFromStr(s string) (ConditionType, error) {
 	case "~":
 		return Like, nil
 	default:
-		return "", fmt.Errorf("invalid condition type: %s", s)
+		return "", fmt.Errorf("%w: %s", ErrInvalidConditionType, s)
 	}
 }
 
 func NewFilter(filterString string, structure interface{}) (*Filter, error) {
 	if filterString == "" {
-		return nil, nil
+		return nil, ErrFilterStringIsEmpty
 	}
 	var filter Filter
 	conditions := strings.Split(filterString, ",,")
@@ -76,17 +86,16 @@ func NewFilter(filterString string, structure interface{}) (*Filter, error) {
 	return &filter, nil
 }
 
+// nolint: funlen
 func getCondition(condString string, structure interface{}) (*Condition, error) {
 	conditionRegex := `^([a-zA-Z0-9]+)(>=|<=|>|<|==|!=|:|~)(.+)$`
 	rgx := regexp.MustCompile(conditionRegex)
 	matches := rgx.FindStringSubmatch(condString)
 	if len(matches) == 0 {
-		return nil, fmt.Errorf("wrong format of condition: %s", condString)
+		return nil, fmt.Errorf("%w: '%s'", ErrInvalidConditionFormat, condString)
 	}
 
-	fieldName := matches[1]
-	condSign := matches[2]
-	condValueStr := matches[3]
+	fieldName, condSign, condValueStr := matches[1], matches[2], matches[3]
 	var condValue interface{}
 	fieldType, err := getFieldType(fieldName, structure)
 	if err != nil {
@@ -97,9 +106,7 @@ func getCondition(condString string, structure interface{}) (*Condition, error) 
 		return nil, err
 	}
 	switch fieldType {
-	case "off":
-		return nil, nil
-	case "string":
+	case "string", "*string":
 		switch condType {
 		case Like:
 			condValue = condValueStr
@@ -107,42 +114,34 @@ func getCondition(condString string, structure interface{}) (*Condition, error) 
 			strSlice := strings.Split(condValueStr, ",")
 			condValue = strSlice
 		case Equal, NotEqual:
-			condValue = condValueStr
-		default:
-			return nil, fmt.Errorf("invalid condition for string type: %v", condSign)
-		}
-	case "*string":
-		switch condType {
-		case Like:
-			condValue = condValueStr
-		case In:
-			strSlice := strings.Split(condValueStr, ",")
-			condValue = strSlice
-		case Equal, NotEqual:
-			if condValueStr == "NULL" || condValueStr == "null" {
+			if fieldType == "*string" && condValueStr == "NULL" || condValueStr == "null" {
 				condValue = nil
 			} else {
 				condValue = condValueStr
 			}
 		default:
-			return nil, fmt.Errorf("invalid condition for string type: %v", condSign)
+			return nil, fmt.Errorf("%w: invalid sign '%s' for type '%s'", ErrInvalidCondition, condSign, fieldType)
 		}
-	case "int":
-	case "bool":
-	case "float64":
+	case "int", "bool", "float64":
+		switch condType {
+		case Equal, NotEqual:
+			condValue = condValueStr
+		default:
+			return nil, fmt.Errorf("%w: invalid sign '%s' for type '%s'", ErrInvalidCondition, condSign, fieldType)
+		}
 	case "time.Time":
 		switch condType {
 		case Equal, GreaterThan, LessThan:
 			const dateLayout = "2006-01-02"
 			condValue, err = time.Parse(dateLayout, condValueStr)
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("parse time: %w", err)
 			}
 		default:
-			return nil, fmt.Errorf("invalid condition '%v' for string type", condSign)
+			return nil, fmt.Errorf("%w: invalid sign '%s' for type '%s'", ErrInvalidCondition, condSign, fieldType)
 		}
 	default:
-		return nil, fmt.Errorf("the type of field '%s' is not supported", fieldType)
+		return nil, fmt.Errorf("%w: '%s'", ErrFieldTypeNotSupported, fieldType)
 	}
 	return &Condition{
 		FieldName: fieldName,
@@ -154,7 +153,7 @@ func getCondition(condString string, structure interface{}) (*Condition, error) 
 func getFieldType(fieldName string, structure interface{}) (string, error) {
 	structValue := reflect.TypeOf(structure)
 	if structValue.Kind() != reflect.Struct {
-		return "", errors.New("error structure type")
+		return "", ErrStructType
 	}
 	caser := cases.Title(language.English)
 	for i := 0; i < structValue.NumField(); i++ {
@@ -166,10 +165,11 @@ func getFieldType(fieldName string, structure interface{}) (string, error) {
 			return structValue.Field(i).Type.String(), nil
 		}
 	}
-	return "", fmt.Errorf("structure doesn't have the field '%s'", fieldName)
+	return "", fmt.Errorf("%w: '%s'", ErrFieldNotFound, fieldName)
 }
 
 func replaceAbbr(abbr string) string {
+	// nolint: gocritic
 	switch abbr {
 	case "id":
 		return "ID"

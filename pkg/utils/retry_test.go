@@ -8,6 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+// nolint: goerr113
 func TestRetry(t *testing.T) {
 	t.Parallel()
 

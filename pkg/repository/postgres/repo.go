@@ -3,6 +3,7 @@ package postgres
 import (
 	"database/sql"
 	"errors"
+	"fmt"
 
 	"github.com/company/blanksvc/pkg/common"
 	"github.com/company/blanksvc/pkg/models"
@@ -25,16 +26,16 @@ func NewRepo(txFactory transactions.TxFactory) repository.Repository {
 func (r repo) ListTasks(filter *filtering.Filter, sort *sorting.Sort, itemsOnPage int, page int) ([]models.Task, int64, error) {
 	sqlTx, err := r.txFactory.Begin()
 	if err != nil {
-		return nil, 0, err
+		return nil, 0, fmt.Errorf("start transaction: %w", err)
 	}
 	var tasks []models.Task
 	var count int64
-	err = sqlTx.Do(func(sqlTx transactions.TxSQL) (errDo error) {
+	err = sqlTx.Do(func(sqlTx transactions.TxSQL) error {
 		query := `SELECT * from tasks`
 
-		rows, err := sqlTx.Query(query)
-		if err != nil {
-			return err
+		rows, queryErr := sqlTx.Query(query)
+		if queryErr != nil {
+			return fmt.Errorf("query execution: %w", queryErr)
 		}
 		defer rows.Close()
 
@@ -43,26 +44,27 @@ func (r repo) ListTasks(filter *filtering.Filter, sort *sorting.Sort, itemsOnPag
 			if errScan := rows.Scan(
 				&task.ID, &task.Name, &task.Description, &task.Deadline, &task.CompletedAt, &task.CreatedAt, &task.UpdatedAt,
 			); errScan != nil {
-				return errScan
+				return fmt.Errorf("scan rows: %w", errScan)
 			}
 			tasks = append(tasks, task)
 		}
-		err = rows.Err()
-		if err != nil {
-			return err
+		rowsErr := rows.Err()
+		if rowsErr != nil {
+			// nolint: wrapcheck
+			return rowsErr
 		}
 
 		query = `SELECT count(*) from tasks`
-		err = sqlTx.QueryRow(query).
+		queryErr = sqlTx.QueryRow(query).
 			Scan(&count)
-		if err != nil {
-			return err
+		if queryErr != nil {
+			return fmt.Errorf("query execution: %w", queryErr)
 		}
 		return nil
 	})
 
 	if err != nil {
-		return nil, 0, err
+		return nil, 0, fmt.Errorf("doing transaction: %w", err)
 	}
 
 	return tasks, count, nil
@@ -71,17 +73,17 @@ func (r repo) ListTasks(filter *filtering.Filter, sort *sorting.Sort, itemsOnPag
 func (r repo) GetTask(id string) (*models.Task, error) {
 	sqlTx, err := r.txFactory.Begin()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("start transaction: %w", err)
 	}
 	var task models.Task
-	err = sqlTx.Do(func(sqlTx transactions.TxSQL) (errDo error) {
+	err = sqlTx.Do(func(sqlTx transactions.TxSQL) error {
 		query := `SELECT * from tasks 
 		WHERE id = $1`
 
-		err := sqlTx.QueryRow(query, id).
+		queryErr := sqlTx.QueryRow(query, id).
 			Scan(&task.ID, &task.Name, &task.Description, &task.Deadline, &task.CompletedAt, &task.CreatedAt, &task.UpdatedAt)
-		if err != nil {
-			return err
+		if queryErr != nil {
+			return fmt.Errorf("query execution: %w", queryErr)
 		}
 		return nil
 	})
@@ -90,7 +92,7 @@ func (r repo) GetTask(id string) (*models.Task, error) {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, common.ErrTaskNotFound
 		}
-		return nil, err
+		return nil, fmt.Errorf("doing transaction: %w", err)
 	}
 
 	return &task, nil
@@ -99,21 +101,21 @@ func (r repo) GetTask(id string) (*models.Task, error) {
 func (r repo) CreateTask(task *models.Task) error {
 	sqlTx, err := r.txFactory.Begin()
 	if err != nil {
-		return err
+		return fmt.Errorf("start transaction: %w", err)
 	}
-	err = sqlTx.Do(func(sqlTx transactions.TxSQL) (errDo error) {
+	err = sqlTx.Do(func(sqlTx transactions.TxSQL) error {
 		query := `INSERT INTO tasks (id, name, description, deadline) 
 			VALUES($1, $2, $3, $4)`
 
-		_, err := sqlTx.Exec(query, task.ID, task.Name, task.Description, task.Deadline)
-		if err != nil {
-			return err
+		_, execErr := sqlTx.Exec(query, task.ID, task.Name, task.Description, task.Deadline)
+		if execErr != nil {
+			return fmt.Errorf("exec run: %w", execErr)
 		}
 		return nil
 	})
 
 	if err != nil {
-		return err
+		return fmt.Errorf("doing transaction: %w", err)
 	}
 
 	return nil
@@ -122,24 +124,24 @@ func (r repo) CreateTask(task *models.Task) error {
 func (r repo) UpdateTask(task *models.Task) error {
 	sqlTx, err := r.txFactory.Begin()
 	if err != nil {
-		return err
+		return fmt.Errorf("start transaction: %w", err)
 	}
 	if _, getErr := r.GetTask(task.ID); err != nil {
 		return getErr
 	}
-	err = sqlTx.Do(func(sqlTx transactions.TxSQL) (errDo error) {
+	err = sqlTx.Do(func(sqlTx transactions.TxSQL) error {
 		query := `UPDATE tasks SET name = $1, description = $2, deadline = $3, updated_at = now()
 			WHERE id = $5`
 
-		_, err := sqlTx.Exec(query, task.Name, task.Description, task.Deadline, task.CompletedAt, task.ID)
-		if err != nil {
-			return err
+		_, execErr := sqlTx.Exec(query, task.Name, task.Description, task.Deadline, task.CompletedAt, task.ID)
+		if execErr != nil {
+			return fmt.Errorf("exec run: %w", execErr)
 		}
 		return nil
 	})
 
 	if err != nil {
-		return err
+		return fmt.Errorf("doing transaction: %w", err)
 	}
 
 	return nil
@@ -148,20 +150,20 @@ func (r repo) UpdateTask(task *models.Task) error {
 func (r repo) CompleteTask(id string) error {
 	sqlTx, err := r.txFactory.Begin()
 	if err != nil {
-		return err
+		return fmt.Errorf("start transaction: %w", err)
 	}
-	err = sqlTx.Do(func(sqlTx transactions.TxSQL) (errDo error) {
+	err = sqlTx.Do(func(sqlTx transactions.TxSQL) error {
 		query := `UPDATE tasks SET completed_at = now() WHERE id = $1`
 
-		_, err := sqlTx.Exec(query, id)
-		if err != nil {
-			return err
+		_, execErr := sqlTx.Exec(query, id)
+		if execErr != nil {
+			return fmt.Errorf("exec run: %w", execErr)
 		}
 		return nil
 	})
 
 	if err != nil {
-		return err
+		return fmt.Errorf("doing transaction: %w", err)
 	}
 
 	return nil
@@ -170,20 +172,20 @@ func (r repo) CompleteTask(id string) error {
 func (r repo) UncompleteTask(id string) error {
 	sqlTx, err := r.txFactory.Begin()
 	if err != nil {
-		return err
+		return fmt.Errorf("start transaction: %w", err)
 	}
-	err = sqlTx.Do(func(sqlTx transactions.TxSQL) (errDo error) {
+	err = sqlTx.Do(func(sqlTx transactions.TxSQL) error {
 		query := `UPDATE tasks SET completed_at = null WHERE id = $1`
 
-		_, err := sqlTx.Exec(query, id)
-		if err != nil {
-			return err
+		_, execErr := sqlTx.Exec(query, id)
+		if execErr != nil {
+			return fmt.Errorf("exec run: %w", execErr)
 		}
 		return nil
 	})
 
 	if err != nil {
-		return err
+		return fmt.Errorf("doing transaction: %w", err)
 	}
 
 	return nil
@@ -192,20 +194,20 @@ func (r repo) UncompleteTask(id string) error {
 func (r repo) DeleteTask(id string) error {
 	sqlTx, err := r.txFactory.Begin()
 	if err != nil {
-		return err
+		return fmt.Errorf("start transaction: %w", err)
 	}
-	err = sqlTx.Do(func(sqlTx transactions.TxSQL) (errDo error) {
+	err = sqlTx.Do(func(sqlTx transactions.TxSQL) error {
 		query := `DELETE FROM tasks WHERE id = $1`
 
-		_, err := sqlTx.Exec(query, id)
-		if err != nil {
-			return err
+		_, execErr := sqlTx.Exec(query, id)
+		if execErr != nil {
+			return fmt.Errorf("exec run: %w", execErr)
 		}
 		return nil
 	})
 
 	if err != nil {
-		return err
+		return fmt.Errorf("doing transaction: %w", err)
 	}
 
 	return nil

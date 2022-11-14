@@ -15,6 +15,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+// nolint: funlen
 func TestListTasks(t *testing.T) {
 	t.Parallel()
 
@@ -22,6 +23,7 @@ func TestListTasks(t *testing.T) {
 		t.Parallel()
 		repoMock := mocks.Repository{}
 		now := time.Now()
+		// nolint: goconst
 		description := "test-description"
 		tasks := []models.Task{
 			{
@@ -56,6 +58,7 @@ func TestListTasks(t *testing.T) {
 		var sort *sorting.Sort
 		itemsOnPage := 0
 		page := 1
+		// nolint: dupl
 		repoMock.On("ListTasks", filter, sort, itemsOnPage, page).Return(
 			func(filter *filtering.Filter, sort *sorting.Sort, itemsOnPage int, page int) []models.Task {
 				return tasks
@@ -81,6 +84,7 @@ func TestListTasks(t *testing.T) {
 		var sort *sorting.Sort
 		itemsOnPage := 0
 		page := 1
+		// nolint: dupl
 		repoMock.On("ListTasks", filter, sort, itemsOnPage, page).Return(
 			func(filter *filtering.Filter, sort *sorting.Sort, itemsOnPage int, page int) []models.Task {
 				return tasks
@@ -106,7 +110,9 @@ func TestListTasks(t *testing.T) {
 		var sort *sorting.Sort
 		itemsOnPage := 0
 		page := 1
+		// nolint: goerr113
 		expectedError := errors.New("failed to list tasks")
+		// nolint: dupl
 		repoMock.On("ListTasks", filter, sort, itemsOnPage, page).Return(
 			func(filter *filtering.Filter, sort *sorting.Sort, itemsOnPage int, page int) []models.Task {
 				return tasks
@@ -170,6 +176,7 @@ func TestGetTask(t *testing.T) {
 			CreatedAt:   now,
 			UpdatedAt:   nil,
 		}
+		// nolint: goerr113
 		expectedError := errors.New("failed to get task")
 		repoMock.On("GetTask", task.ID).Return(
 			func(id string) *models.Task {
@@ -190,6 +197,7 @@ func TestGetTask(t *testing.T) {
 func TestCreateTask(t *testing.T) {
 	t.Parallel()
 
+	// nolint: dupl
 	t.Run("successful case", func(t *testing.T) {
 		t.Parallel()
 		repoMock := mocks.Repository{}
@@ -220,6 +228,7 @@ func TestCreateTask(t *testing.T) {
 		assert.Equal(t, &task, createdTask)
 	})
 
+	// nolint: dupl
 	t.Run("failed to create task", func(t *testing.T) {
 		t.Parallel()
 		repoMock := mocks.Repository{}
@@ -234,6 +243,7 @@ func TestCreateTask(t *testing.T) {
 			CreatedAt:   now,
 			UpdatedAt:   nil,
 		}
+		// nolint: goerr113
 		expectedError := errors.New("failed to create task")
 		repoMock.On("CreateTask", &task).Return(
 			func(task *models.Task) error {
@@ -264,6 +274,7 @@ func TestCreateTask(t *testing.T) {
 		repoMock.On("CreateTask", &task).Return(
 			func(task *models.Task) error { return nil },
 		)
+		// nolint: goerr113
 		expectedError := errors.New("failed to get task")
 		repoMock.On("GetTask", task.ID).Return(
 			func(id string) *models.Task {
@@ -281,9 +292,11 @@ func TestCreateTask(t *testing.T) {
 	})
 }
 
+// nolint: funlen
 func TestUpdateTask(t *testing.T) {
 	t.Parallel()
 
+	// nolint: dupl
 	t.Run("successful case", func(t *testing.T) {
 		t.Parallel()
 		repoMock := mocks.Repository{}
@@ -368,6 +381,7 @@ func TestUpdateTask(t *testing.T) {
 				return common.ErrTaskNotFound
 			},
 		)
+		// nolint: goerr113
 		expectedError := errors.New("failed to create task")
 		repoMock.On("CreateTask", &task).Return(
 			func(task *models.Task) error {
@@ -381,6 +395,7 @@ func TestUpdateTask(t *testing.T) {
 		assert.True(t, errors.Is(err, expectedError))
 	})
 
+	// nolint: dupl
 	t.Run("failed to update task", func(t *testing.T) {
 		t.Parallel()
 		repoMock := mocks.Repository{}
@@ -395,6 +410,7 @@ func TestUpdateTask(t *testing.T) {
 			CreatedAt:   now,
 			UpdatedAt:   nil,
 		}
+		// nolint: goerr113
 		expectedError := errors.New("failed to update task")
 		repoMock.On("UpdateTask", &task).Return(
 			func(task *models.Task) error {
@@ -425,6 +441,7 @@ func TestUpdateTask(t *testing.T) {
 		repoMock.On("UpdateTask", &task).Return(
 			func(task *models.Task) error { return nil },
 		)
+		// nolint: goerr113
 		expectedError := errors.New("failed to get task")
 		repoMock.On("GetTask", task.ID).Return(
 			func(id string) *models.Task {
@@ -442,12 +459,15 @@ func TestUpdateTask(t *testing.T) {
 	})
 }
 
+// nolint: dupl
 func TestCompleteTask(t *testing.T) {
 	t.Parallel()
 
+	// nolint: dupl
 	t.Run("successful case", func(t *testing.T) {
 		t.Parallel()
 		repoMock := mocks.Repository{}
+		// nolint: goconst
 		taskID := "4ed34c91-5f6c-4316-82bf-72a211003e21"
 		repoMock.On("CompleteTask", taskID).Return(
 			func(id string) error { return nil },
@@ -462,6 +482,7 @@ func TestCompleteTask(t *testing.T) {
 		t.Parallel()
 		repoMock := mocks.Repository{}
 		taskID := "4ed34c91-5f6c-4316-82bf-72a211003e21"
+		// nolint: goerr113
 		expectedError := errors.New("failed to complete task")
 		repoMock.On("CompleteTask", taskID).Return(
 			func(id string) error {
@@ -476,6 +497,7 @@ func TestCompleteTask(t *testing.T) {
 	})
 }
 
+// nolint: dupl
 func TestUncompleteTask(t *testing.T) {
 	t.Parallel()
 
@@ -496,6 +518,7 @@ func TestUncompleteTask(t *testing.T) {
 		t.Parallel()
 		repoMock := mocks.Repository{}
 		taskID := "4ed34c91-5f6c-4316-82bf-72a211003e21"
+		// nolint: goerr113
 		expectedError := errors.New("failed to uncomplete task")
 		repoMock.On("UncompleteTask", taskID).Return(
 			func(id string) error {
@@ -510,9 +533,11 @@ func TestUncompleteTask(t *testing.T) {
 	})
 }
 
+// nolint: dupl
 func TestDeleteTask(t *testing.T) {
 	t.Parallel()
 
+	// nolint: dupl
 	t.Run("successful case", func(t *testing.T) {
 		t.Parallel()
 		repoMock := mocks.Repository{}
@@ -530,6 +555,7 @@ func TestDeleteTask(t *testing.T) {
 		t.Parallel()
 		repoMock := mocks.Repository{}
 		taskID := "4ed34c91-5f6c-4316-82bf-72a211003e21"
+		// nolint: goerr113
 		expectedError := errors.New("failed to delete task")
 		repoMock.On("DeleteTask", taskID).Return(
 			func(id string) error {

@@ -3,6 +3,7 @@ package http
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"strconv"
 
 	"net/http"
@@ -90,13 +91,13 @@ func decodeHTTPListTasksRequest(_ context.Context, r *http.Request) (interface{}
 	itemsOnPage := defaultItemsOnPage
 	if _, ok := r.URL.Query()["itemsOnPage"]; ok {
 		if itemsOnPage, err = strconv.Atoi(r.URL.Query().Get("itemsOnPage")); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("conversion of itemsOnPage to int: %w", err)
 		}
 	}
 	page := defaultPage
 	if _, ok := r.URL.Query()["page"]; ok {
 		if itemsOnPage, err = strconv.Atoi(r.URL.Query().Get("page")); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("conversion of page to int: %w", err)
 		}
 	}
 	return endpoints.ListTasksRequest{
@@ -115,7 +116,7 @@ func decodeHTTPGetTaskRequest(_ context.Context, r *http.Request) (interface{}, 
 func decodeHTTPCreateTaskRequest(_ context.Context, r *http.Request) (interface{}, error) {
 	var task *models.Task
 	if err := json.NewDecoder(r.Body).Decode(&task); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("task unmarshaling: %w", err)
 	}
 	return task, nil
 }
@@ -123,7 +124,7 @@ func decodeHTTPCreateTaskRequest(_ context.Context, r *http.Request) (interface{
 func decodeHTTPUpdateTaskRequest(_ context.Context, r *http.Request) (interface{}, error) {
 	var task *models.Task
 	if err := json.NewDecoder(r.Body).Decode(&task); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("task unmarshaling: %w", err)
 	}
 	return task, nil
 }
@@ -149,5 +150,6 @@ func encodeHTTPGenericResponse(ctx context.Context, w http.ResponseWriter, respo
 		return nil
 	}
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	// nolint: wrapcheck
 	return json.NewEncoder(w).Encode(response)
 }

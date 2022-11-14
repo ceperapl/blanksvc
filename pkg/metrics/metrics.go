@@ -5,6 +5,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
+// nolint: gochecknoglobals
 var (
 	MetricsNamespace = "blanksvc"
 

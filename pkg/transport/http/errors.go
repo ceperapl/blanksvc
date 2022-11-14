@@ -14,6 +14,6 @@ type errorWrapper struct {
 
 func errorEncoder(_ context.Context, err error, w http.ResponseWriter) {
 	w.WriteHeader(common.ErrorToCode(err))
-	// nolint: errcheck
+	// nolint: errcheck, errchkjson
 	json.NewEncoder(w).Encode(errorWrapper{Error: err.Error()})
 }

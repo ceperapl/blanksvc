@@ -11,8 +11,8 @@ func NewTx(sqlTx TxSQL) Tx {
 	return &txImpl{TxSQL: sqlTx}
 }
 
-func (tx *txImpl) Do(fn TxHandler) (err error) {
-	err = fn(tx)
+func (tx *txImpl) Do(fn TxHandler) error {
+	err := fn(tx)
 	if err != nil {
 		rollbackErr := tx.Rollback()
 		if rollbackErr != nil {

@@ -34,6 +34,7 @@ linters:
     - varnamelen
     - ireturn
     - exhaustruct
+    - testpackage
 linters-settings:
   funlen:
     lines: 100
@@ -73,44 +74,3 @@ linters-settings:
       - .WithStack(
 output:
   print-issued-lines: false
-
-issues:
-  exclude-use-default: false
-  max-per-linter: 0
-  max-same-issues: 0
-  new-from-rev: HEAD~
-  exclude:
-  - "should have a package comment, unless it's in another file for this package"
-  - "(struct field|var|func|method|func parameter|range var|const|type) .* should be .*"
-  - "the channel used with signal.Notify should be buffered"
-  - "G104:" # go-sec rule of err checking, it has the same logic as errcheck linter, so ignore duplicate
-  - "Error return value of `.*.Body.Close` is not checked"
-  - "Error return value of `.*.Close()` is not checked"
-  - "Error return value of `rows.Close` is not checked"
-  - "Error return value of `viper.BindEnv` is not checked"
-  - "G108: Profiling endpoint is automatically exposed on /debug/pprof"
-  - "exported var Err.* should have comment or be unexported"
-  - "put a space between `//` and comment text"
-  - "Function 'main' has too many statements"
-  - "ST1000:"
-  - "G204:" # G204: Subprocess launched with variable (gosec) - useless, we often launch different cmds with params
-  exclude-rules:
-    - path: _test\.go
-      linters:
-        - gochecknoglobals
-        - goconst
-        - errcheck
-        - gosec
-        - gomnd
-        - funlen
-        - testpackage
-        - lll
-        - bodyclose
-        - unparam
-        - dupl
-        - goerr113
-        - wrapcheck
-    - linters:
-        - lll
-      source: "^//go:generate "
-

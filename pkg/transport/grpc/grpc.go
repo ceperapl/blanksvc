@@ -2,6 +2,7 @@ package grpc
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/company/blanksvc/pkg/endpoints"
@@ -82,60 +83,68 @@ func NewGRPCServer(endpoints endpoints.Endpoints, logger log.Logger) ServiceServ
 func (g *grpcServer) ListTasks(ctx context.Context, req *taskv1.ListTasksRequest) (*taskv1.ListTasksResponse, error) {
 	_, resp, err := g.listTasks.ServeGRPC(ctx, req)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("serve ListTasks handler: %w", err)
 	}
+	// nolint: forcetypeassert
 	return resp.(*taskv1.ListTasksResponse), nil
 }
 
 func (g *grpcServer) GetTask(ctx context.Context, req *taskv1.GetTaskRequest) (*taskv1.GetTaskResponse, error) {
 	_, resp, err := g.getTask.ServeGRPC(ctx, req)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("serve GetTask handler: %w", err)
 	}
+	// nolint: forcetypeassert
 	return resp.(*taskv1.GetTaskResponse), nil
 }
 
 func (g *grpcServer) CreateTask(ctx context.Context, req *taskv1.CreateTaskRequest) (*taskv1.CreateTaskResponse, error) {
 	_, resp, err := g.createTask.ServeGRPC(ctx, req)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("serve CreateTask handler: %w", err)
 	}
+	// nolint: forcetypeassert
 	return resp.(*taskv1.CreateTaskResponse), nil
 }
 
 func (g *grpcServer) UpdateTask(ctx context.Context, req *taskv1.UpdateTaskRequest) (*taskv1.UpdateTaskResponse, error) {
 	_, resp, err := g.updateTask.ServeGRPC(ctx, req)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("serve UpdateTask handler: %w", err)
 	}
+	// nolint: forcetypeassert
 	return resp.(*taskv1.UpdateTaskResponse), nil
 }
 
 func (g *grpcServer) CompleteTask(ctx context.Context, req *taskv1.CompleteTaskRequest) (*taskv1.CompleteTaskResponse, error) {
 	_, resp, err := g.completeTask.ServeGRPC(ctx, req)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("serve CompleteTask handler: %w", err)
 	}
+	// nolint: forcetypeassert
 	return resp.(*taskv1.CompleteTaskResponse), nil
 }
 
 func (g *grpcServer) UncompleteTask(ctx context.Context, req *taskv1.UncompleteTaskRequest) (*taskv1.UncompleteTaskResponse, error) {
 	_, resp, err := g.uncompleteTask.ServeGRPC(ctx, req)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("serve UncompleteTask handler: %w", err)
 	}
+	// nolint: forcetypeassert
 	return resp.(*taskv1.UncompleteTaskResponse), nil
 }
 
 func (g *grpcServer) DeleteTask(ctx context.Context, req *taskv1.DeleteTaskRequest) (*taskv1.DeleteTaskResponse, error) {
 	_, resp, err := g.deleteTask.ServeGRPC(ctx, req)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("serve DeleteTask handler: %w", err)
 	}
+	// nolint: forcetypeassert
 	return resp.(*taskv1.DeleteTaskResponse), nil
 }
 
 func decodeGRPCListTasksRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
+	// nolint: forcetypeassert
 	req := grpcReq.(*taskv1.ListTasksRequest)
 	return endpoints.ListTasksRequest{
 		Filter:      req.Filter,
@@ -146,8 +155,9 @@ func decodeGRPCListTasksRequest(_ context.Context, grpcReq interface{}) (interfa
 }
 
 func encodeGRPCListTasksResponse(_ context.Context, response interface{}) (interface{}, error) {
+	// nolint: forcetypeassert
 	resp := response.(endpoints.ListTaskResponse)
-	var grpcTasks []*taskv1.Task
+	grpcTasks := make([]*taskv1.Task, 0, len(resp.Tasks))
 	for _, task := range resp.Tasks {
 		task := task
 		grpcTasks = append(grpcTasks, TransformTask(&task))
@@ -160,6 +170,7 @@ func encodeGRPCListTasksResponse(_ context.Context, response interface{}) (inter
 }
 
 func decodeGRPCGetTaskRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
+	// nolint: forcetypeassert
 	req := grpcReq.(*taskv1.GetTaskRequest)
 	return endpoints.GetTaskRequest{
 		ID: req.Id,
@@ -167,31 +178,37 @@ func decodeGRPCGetTaskRequest(_ context.Context, grpcReq interface{}) (interface
 }
 
 func encodeGRPCGetTaskResponse(_ context.Context, response interface{}) (interface{}, error) {
+	// nolint: forcetypeassert
 	task := response.(models.Task)
 	return &taskv1.GetTaskResponse{Task: TransformTask(&task)}, nil
 }
 
 func decodeGRPCCreateTaskRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
+	// nolint: forcetypeassert
 	req := grpcReq.(*taskv1.CreateTaskRequest)
 	return TransformTaskPB(req.Task), nil
 }
 
 func encodeGRPCCreateTaskResponse(_ context.Context, response interface{}) (interface{}, error) {
+	// nolint: forcetypeassert
 	task := response.(models.Task)
 	return &taskv1.CreateTaskResponse{Task: TransformTask(&task)}, nil
 }
 
 func decodeGRPCUpdateTaskRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
+	// nolint: forcetypeassert
 	req := grpcReq.(*taskv1.UpdateTaskRequest)
 	return TransformTaskPB(req.Task), nil
 }
 
 func encodeGRPCUpdateTaskResponse(_ context.Context, response interface{}) (interface{}, error) {
+	// nolint: forcetypeassert
 	task := response.(models.Task)
 	return &taskv1.UpdateTaskResponse{Task: TransformTask(&task)}, nil
 }
 
 func decodeGRPCCompleteTaskRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
+	// nolint: forcetypeassert
 	req := grpcReq.(*taskv1.CompleteTaskRequest)
 	return endpoints.CompleteTaskRequest{ID: req.Id}, nil
 }
@@ -201,6 +218,7 @@ func encodeGRPCCompleteTaskResponse(_ context.Context, response interface{}) (in
 }
 
 func decodeGRPCUncompleteTaskRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
+	// nolint: forcetypeassert
 	req := grpcReq.(*taskv1.UncompleteTaskRequest)
 	return endpoints.UncompleteTaskRequest{ID: req.Id}, nil
 }
@@ -210,6 +228,7 @@ func encodeGRPCUncompleteTaskResponse(_ context.Context, response interface{}) (
 }
 
 func decodeGRPCDeleteTaskRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
+	// nolint: forcetypeassert
 	req := grpcReq.(*taskv1.DeleteTaskRequest)
 	return endpoints.DeleteTaskRequest{ID: req.Id}, nil
 }
