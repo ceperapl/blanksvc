@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"database/sql"
 	"fmt"
 	"net"
 	"net/http"
@@ -10,8 +9,7 @@ import (
 	taskv1 "github.com/company/blanksvc/gen/proto/go/task/v1"
 	"github.com/company/blanksvc/pkg/endpoints"
 	"github.com/company/blanksvc/pkg/metrics"
-	"github.com/company/blanksvc/pkg/repository/postgres"
-	"github.com/company/blanksvc/pkg/repository/postgres/transactions"
+	"github.com/company/blanksvc/pkg/repository/memory"
 	"github.com/company/blanksvc/pkg/service"
 	grpctransport "github.com/company/blanksvc/pkg/transport/grpc"
 	httptransport "github.com/company/blanksvc/pkg/transport/http"
@@ -40,24 +38,11 @@ func RunServer() error {
 	logger = log.With(logger, "ts", log.DefaultTimestampUTC)
 	logger = log.With(logger, "caller", log.DefaultCaller)
 
-	db, err := postgres.New(logger, config.Postgres.DSN)
-	if err != nil {
-		return err
-	}
-	defer db.Close()
-
-	// Migrate DB
-	if err := postgres.Migrate(config.Postgres.DSN); err != nil {
-		return err
-	}
-
-	txFactory := transactions.New(db)
-
 	// Configure the HTTP server
 	rootMux := mux.NewRouter()
 
 	// Build the layers of the service "onion" from the inside out
-	repository := postgres.NewRepo(txFactory)
+	repository := memory.NewRepo()
 	service := service.New(logger, repository)
 	endpoints := endpoints.New(service, logger, requestLatency, requestCounter, errorCounter)
 	httptransport.Handle(rootMux, endpoints, logger)
@@ -65,7 +50,7 @@ func RunServer() error {
 
 	// Configure health checks
 	healthchecker := httptransport.NewHealthChecker()
-	healthchecker.AddReadinessChecks(readinessCheck(db))
+	healthchecker.AddReadinessChecks(readinessCheck)
 	rootMux.Handle(config.HTTPServer.ReadinessEndpoint, healthchecker.ReadinessHandler())
 	rootMux.Handle(config.HTTPServer.LivenessEndpoint, healthchecker.LivenessHandler())
 	// Configure metrics
@@ -105,8 +90,6 @@ func RunServer() error {
 	return nil
 }
 
-func readinessCheck(db *sql.DB) httptransport.Check {
-	return func() error {
-		return db.Ping()
-	}
+func readinessCheck() error {
+	return nil
 }

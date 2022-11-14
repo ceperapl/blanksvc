@@ -21,9 +21,6 @@ const (
 
 	grpcServerPortEnv     = "GRPC_SERVER_PORT"
 	grpcServerPortDefault = 9000
-
-	postgresDSNEnv     = "POSTGRES_DSN"
-	postgresDSNDefault = "postgres://postgres:postgres@localhost:5432/blanksvc?sslmode=disable"
 )
 
 type Config struct {
@@ -66,17 +63,11 @@ func NewConfig() Config {
 	viper.SetDefault(grpcServerPortEnv, grpcServerPortDefault)
 	config.GRPCServer.Port = viper.GetUint16(grpcServerPortEnv)
 
-	// nolint: errcheck
-	viper.BindEnv(postgresDSNEnv)
-	viper.SetDefault(postgresDSNEnv, postgresDSNDefault)
-	config.Postgres.DSN = viper.GetString(postgresDSNEnv)
-
 	// Init config via flags
 	pflag.Uint16Var(&config.HTTPServer.Port, "httpserver.port", config.HTTPServer.Port, fmt.Sprintf("HTTP Server port; env: %s", httpServerPortEnv))
 	pflag.StringVar(&config.HTTPServer.ReadinessEndpoint, "httpserver.readiness", config.HTTPServer.ReadinessEndpoint, fmt.Sprintf("HTTP Server readiness endpoint name; env: %s", httpReadinessEndpointEnv))
 	pflag.StringVar(&config.HTTPServer.LivenessEndpoint, "httpserver.liveness", config.HTTPServer.LivenessEndpoint, fmt.Sprintf("HTTP Server liveness endpoint name; env: %s", httpLivenessEndpointEnv))
 	pflag.Uint16Var(&config.GRPCServer.Port, "grpcserver.port", config.GRPCServer.Port, fmt.Sprintf("gRPC Server port; env: %s", grpcServerPortEnv))
-	pflag.StringVar(&config.Postgres.DSN, "postgres.dsn", config.Postgres.DSN, fmt.Sprintf("Postgres DSТ; env: %s", postgresDSNEnv))
 
 	pflag.Parse()
 
