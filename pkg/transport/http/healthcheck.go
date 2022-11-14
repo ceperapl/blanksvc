@@ -1,4 +1,4 @@
-package utils
+package http
 
 import (
 	"net/http"
@@ -15,7 +15,7 @@ type HealthChecker interface {
 	ReadinessHandler() http.HandlerFunc
 }
 
-func New() HealthChecker {
+func NewHealthChecker() HealthChecker {
 	return &healthcheck{}
 }
 

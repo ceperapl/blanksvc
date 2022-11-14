@@ -31,13 +31,6 @@ func Handle(mux *mux.Router, endpoints endpoints.Endpoints, logger log.Logger) *
 
 	subRouter := mux.PathPrefix("/api/v1").Subrouter()
 
-	subRouter.Handle("/hello", httptransport.NewServer(
-		endpoints.HelloEndpoint,
-		decodeHTTPHelloRequest,
-		encodeHTTPGenericResponse,
-		options...,
-	)).Methods(http.MethodGet)
-
 	subRouter.Handle("/tasks", httptransport.NewServer(
 		endpoints.ListTasksEndpoint,
 		decodeHTTPListTasksRequest,
@@ -88,11 +81,6 @@ func Handle(mux *mux.Router, endpoints endpoints.Endpoints, logger log.Logger) *
 	)).Methods(http.MethodDelete)
 
 	return subRouter
-}
-
-func decodeHTTPHelloRequest(_ context.Context, r *http.Request) (interface{}, error) {
-	name := r.URL.Query().Get("name")
-	return endpoints.HelloRequest{Name: name}, nil
 }
 
 func decodeHTTPListTasksRequest(_ context.Context, r *http.Request) (interface{}, error) {

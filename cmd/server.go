@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"os"
 
-	hellov1 "github.com/company/blanksvc/gen/proto/go/hello/v1"
 	taskv1 "github.com/company/blanksvc/gen/proto/go/task/v1"
 	"github.com/company/blanksvc/pkg/endpoints"
 	"github.com/company/blanksvc/pkg/metrics"
@@ -16,7 +15,6 @@ import (
 	"github.com/company/blanksvc/pkg/service"
 	grpctransport "github.com/company/blanksvc/pkg/transport/grpc"
 	httptransport "github.com/company/blanksvc/pkg/transport/http"
-	"github.com/company/blanksvc/pkg/utils"
 
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
@@ -26,7 +24,6 @@ import (
 )
 
 func RunServer() error {
-
 	doneC := make(chan error)
 
 	// Init config
@@ -67,7 +64,7 @@ func RunServer() error {
 	grpcServer := grpctransport.NewGRPCServer(endpoints, logger)
 
 	// Configure health checks
-	healthchecker := utils.New()
+	healthchecker := httptransport.NewHealthChecker()
 	healthchecker.AddReadinessChecks(readinessCheck(db))
 	rootMux.Handle(config.HTTPServer.ReadinessEndpoint, healthchecker.ReadinessHandler())
 	rootMux.Handle(config.HTTPServer.LivenessEndpoint, healthchecker.LivenessHandler())
@@ -90,7 +87,6 @@ func RunServer() error {
 		return err
 	}
 	baseServer := grpc.NewServer()
-	hellov1.RegisterHelloServiceServer(baseServer, grpcServer)
 	taskv1.RegisterTaskServiceServer(baseServer, grpcServer)
 	// Start the GRPC server
 	// nolint: errcheck
@@ -109,7 +105,7 @@ func RunServer() error {
 	return nil
 }
 
-func readinessCheck(db *sql.DB) utils.Check {
+func readinessCheck(db *sql.DB) httptransport.Check {
 	return func() error {
 		return db.Ping()
 	}

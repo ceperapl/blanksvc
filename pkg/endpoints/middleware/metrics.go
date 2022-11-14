@@ -12,11 +12,11 @@ import (
 	kitmetrics "github.com/go-kit/kit/metrics"
 )
 
-func MetricsMiddleware(latency kitmetrics.Histogram, requestCounter kitmetrics.Counter, errorCounter kitmetrics.Counter) endpoint.Middleware {
+func MetricsMiddleware(requestLatency kitmetrics.Histogram, requestCounter kitmetrics.Counter, errorCounter kitmetrics.Counter) endpoint.Middleware {
 	return func(next endpoint.Endpoint) endpoint.Endpoint {
 		return func(ctx context.Context, request interface{}) (interface{}, error) {
 			defer func(begin time.Time) {
-				latency.Observe(time.Since(begin).Seconds())
+				requestLatency.Observe(time.Since(begin).Seconds())
 				requestCounter.Add(1)
 			}(time.Now())
 			resp, err := next(ctx, request)

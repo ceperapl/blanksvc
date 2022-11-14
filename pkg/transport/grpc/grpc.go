@@ -8,7 +8,6 @@ import (
 	"github.com/company/blanksvc/pkg/models"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	hellov1 "github.com/company/blanksvc/gen/proto/go/hello/v1"
 	taskv1 "github.com/company/blanksvc/gen/proto/go/task/v1"
 	"github.com/go-kit/kit/transport"
 	grpctransport "github.com/go-kit/kit/transport/grpc"
@@ -16,12 +15,10 @@ import (
 )
 
 type ServiceServer interface {
-	hellov1.HelloServiceServer
 	taskv1.TaskServiceServer
 }
 
 type grpcServer struct {
-	hello          grpctransport.Handler
 	listTasks      grpctransport.Handler
 	getTask        grpctransport.Handler
 	createTask     grpctransport.Handler
@@ -37,12 +34,6 @@ func NewGRPCServer(endpoints endpoints.Endpoints, logger log.Logger) ServiceServ
 	}
 
 	return &grpcServer{
-		hello: grpctransport.NewServer(
-			endpoints.HelloEndpoint,
-			decodeGRPCHelloRequest,
-			encodeGRPCHelloResponse,
-			options...,
-		),
 		listTasks: grpctransport.NewServer(
 			endpoints.ListTasksEndpoint,
 			decodeGRPCListTasksRequest,
@@ -86,14 +77,6 @@ func NewGRPCServer(endpoints endpoints.Endpoints, logger log.Logger) ServiceServ
 			options...,
 		),
 	}
-}
-
-func (g *grpcServer) Hello(ctx context.Context, req *hellov1.HelloRequest) (*hellov1.HelloResponse, error) {
-	_, resp, err := g.hello.ServeGRPC(ctx, req)
-	if err != nil {
-		return nil, err
-	}
-	return resp.(*hellov1.HelloResponse), nil
 }
 
 func (g *grpcServer) ListTasks(ctx context.Context, req *taskv1.ListTasksRequest) (*taskv1.ListTasksResponse, error) {
@@ -150,16 +133,6 @@ func (g *grpcServer) DeleteTask(ctx context.Context, req *taskv1.DeleteTaskReque
 		return nil, err
 	}
 	return resp.(*taskv1.DeleteTaskResponse), nil
-}
-
-func decodeGRPCHelloRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
-	req := grpcReq.(*hellov1.HelloRequest)
-	return endpoints.HelloRequest{Name: req.Name}, nil
-}
-
-func encodeGRPCHelloResponse(_ context.Context, response interface{}) (interface{}, error) {
-	resp := response.(endpoints.HelloResponse)
-	return &hellov1.HelloResponse{Greeting: resp.Greeting}, nil
 }
 
 func decodeGRPCListTasksRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {

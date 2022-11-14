@@ -2,8 +2,8 @@ package metrics
 
 import (
 	"github.com/go-kit/kit/metrics"
-	"github.com/go-kit/kit/metrics/prometheus"
-	kitprometheus "github.com/prometheus/client_golang/prometheus"
+	kitprometheus "github.com/go-kit/kit/metrics/prometheus"
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 var (
@@ -15,14 +15,8 @@ var (
 	MetricsErrorKindLabel    = "error_kind"
 )
 
-type Metrics struct {
-	RequestLatency metrics.Histogram
-	RequestCounter metrics.Counter
-	ErrorCounter   metrics.Counter
-}
-
 func NewRequestLatencyMetric() metrics.Histogram {
-	latencyHistogram := prometheus.NewHistogramFrom(kitprometheus.HistogramOpts{
+	latencyHistogram := kitprometheus.NewHistogramFrom(prometheus.HistogramOpts{
 		Namespace: MetricsNamespace,
 		Subsystem: "service",
 		Name:      "request_latency",
@@ -32,7 +26,7 @@ func NewRequestLatencyMetric() metrics.Histogram {
 }
 
 func NewRequestCounterMetric() metrics.Counter {
-	requestCounter := prometheus.NewCounterFrom(kitprometheus.CounterOpts{
+	requestCounter := kitprometheus.NewCounterFrom(prometheus.CounterOpts{
 		Namespace: MetricsNamespace,
 		Subsystem: "service",
 		Name:      "requests_total",
@@ -42,7 +36,7 @@ func NewRequestCounterMetric() metrics.Counter {
 }
 
 func NewErrorCounterMetric() metrics.Counter {
-	errorCounter := prometheus.NewCounterFrom(kitprometheus.CounterOpts{
+	errorCounter := kitprometheus.NewCounterFrom(prometheus.CounterOpts{
 		Namespace: MetricsNamespace,
 		Subsystem: "service",
 		Name:      "errors_total",

@@ -13,13 +13,15 @@ import (
 	"github.com/go-kit/log"
 )
 
-type HelloRequest struct {
-	Name string `json:"name"`
-}
-
-type HelloResponse struct {
-	Greeting string `json:"greeting"`
-}
+const (
+	listTasksEndpointName      = "ListTasks"
+	getTaskEndpointName        = "GetTask"
+	createTaskEndpointName     = "CreateTask"
+	updateTaskEndpointName     = "UpdateTask"
+	completeTaskEndpointName   = "CompleteTask"
+	uncompleteTaskEndpointName = "UncompleteTask"
+	deleteTaskEndpointName     = "DeleteTask"
+)
 
 type ListTasksRequest struct {
 	Filter      string `json:"filter"`
@@ -50,7 +52,6 @@ type DeleteTaskRequest struct {
 }
 
 type Endpoints struct {
-	HelloEndpoint          endpoint.Endpoint
 	ListTasksEndpoint      endpoint.Endpoint
 	GetTaskEndpoint        endpoint.Endpoint
 	CreateTaskEndpoint     endpoint.Endpoint
@@ -61,80 +62,56 @@ type Endpoints struct {
 }
 
 func New(svc service.Service, logger log.Logger, requestLatency kitmetrics.Histogram, requestCounter kitmetrics.Counter, errorCounter kitmetrics.Counter) Endpoints {
-	helloEndpoint := middleware.LoggingMiddleware(log.With(logger, "method", "Hello"))(
+	listTasksEndpoint := middleware.LoggingMiddleware(log.With(logger, "method", listTasksEndpointName))(
 		middleware.MetricsMiddleware(
-			requestLatency.With(metrics.MetricsEndpointNameLabel, "Hello"),
-			requestCounter.With(metrics.MetricsEndpointNameLabel, "Hello"),
+			requestLatency.With(metrics.MetricsEndpointNameLabel, listTasksEndpointName),
+			requestCounter.With(metrics.MetricsEndpointNameLabel, listTasksEndpointName),
 			errorCounter,
-		)(
-			MakeHelloEndpoint(svc),
-		),
+		)(MakeListTasksEndpoint(svc)),
 	)
-	listTasksEndpoint := middleware.LoggingMiddleware(log.With(logger, "method", "ListTasks"))(
+	getTaskEndpoint := middleware.LoggingMiddleware(log.With(logger, "method", getTaskEndpointName))(
 		middleware.MetricsMiddleware(
-			requestLatency.With(metrics.MetricsEndpointNameLabel, "ListTasks"),
-			requestCounter.With(metrics.MetricsEndpointNameLabel, "ListTasks"),
+			requestLatency.With(metrics.MetricsEndpointNameLabel, getTaskEndpointName),
+			requestCounter.With(metrics.MetricsEndpointNameLabel, getTaskEndpointName),
 			errorCounter,
-		)(
-			MakeListTasksEndpoint(svc),
-		),
+		)(MakeGetTaskEndpoint(svc)),
 	)
-	getTaskEndpoint := middleware.LoggingMiddleware(log.With(logger, "method", "GetTask"))(
+	createTaskEndpoint := middleware.LoggingMiddleware(log.With(logger, "method", createTaskEndpointName))(
 		middleware.MetricsMiddleware(
-			requestLatency.With(metrics.MetricsEndpointNameLabel, "GetTask"),
-			requestCounter.With(metrics.MetricsEndpointNameLabel, "GetTask"),
+			requestLatency.With(metrics.MetricsEndpointNameLabel, createTaskEndpointName),
+			requestCounter.With(metrics.MetricsEndpointNameLabel, createTaskEndpointName),
 			errorCounter,
-		)(
-			MakeGetTaskEndpoint(svc),
-		),
+		)(MakeCreateTaskEndpoint(svc)),
 	)
-	createTaskEndpoint := middleware.LoggingMiddleware(log.With(logger, "method", "CreateTask"))(
+	updateTaskEndpoint := middleware.LoggingMiddleware(log.With(logger, "method", updateTaskEndpointName))(
 		middleware.MetricsMiddleware(
-			requestLatency.With(metrics.MetricsEndpointNameLabel, "CreateTask"),
-			requestCounter.With(metrics.MetricsEndpointNameLabel, "CreateTask"),
+			requestLatency.With(metrics.MetricsEndpointNameLabel, updateTaskEndpointName),
+			requestCounter.With(metrics.MetricsEndpointNameLabel, updateTaskEndpointName),
 			errorCounter,
-		)(
-			MakeCreateTaskEndpoint(svc),
-		),
+		)(MakeUpdateTaskEndpoint(svc)),
 	)
-	updateTaskEndpoint := middleware.LoggingMiddleware(log.With(logger, "method", "UpdateTask"))(
+	completeTaskEndpoint := middleware.LoggingMiddleware(log.With(logger, "method", completeTaskEndpointName))(
 		middleware.MetricsMiddleware(
-			requestLatency.With(metrics.MetricsEndpointNameLabel, "UpdateTask"),
-			requestCounter.With(metrics.MetricsEndpointNameLabel, "UpdateTask"),
+			requestLatency.With(metrics.MetricsEndpointNameLabel, completeTaskEndpointName),
+			requestCounter.With(metrics.MetricsEndpointNameLabel, completeTaskEndpointName),
 			errorCounter,
-		)(
-			MakeUpdateTaskEndpoint(svc),
-		),
+		)(MakeCompleteTaskEndpoint(svc)),
 	)
-	completeTaskEndpoint := middleware.LoggingMiddleware(log.With(logger, "method", "CompleteTask"))(
+	uncompleteTaskEndpoint := middleware.LoggingMiddleware(log.With(logger, "method", uncompleteTaskEndpointName))(
 		middleware.MetricsMiddleware(
-			requestLatency.With(metrics.MetricsEndpointNameLabel, "CompleteTask"),
-			requestCounter.With(metrics.MetricsEndpointNameLabel, "CompleteTask"),
+			requestLatency.With(metrics.MetricsEndpointNameLabel, uncompleteTaskEndpointName),
+			requestCounter.With(metrics.MetricsEndpointNameLabel, uncompleteTaskEndpointName),
 			errorCounter,
-		)(
-			MakeCompleteTaskEndpoint(svc),
-		),
+		)(MakeUncompleteTaskEndpoint(svc)),
 	)
-	uncompleteTaskEndpoint := middleware.LoggingMiddleware(log.With(logger, "method", "UncompleteTask"))(
+	deleteTaskEndpoint := middleware.LoggingMiddleware(log.With(logger, "method", deleteTaskEndpointName))(
 		middleware.MetricsMiddleware(
-			requestLatency.With(metrics.MetricsEndpointNameLabel, "UncompleteTask"),
-			requestCounter.With(metrics.MetricsEndpointNameLabel, "UncompleteTask"),
+			requestLatency.With(metrics.MetricsEndpointNameLabel, deleteTaskEndpointName),
+			requestCounter.With(metrics.MetricsEndpointNameLabel, deleteTaskEndpointName),
 			errorCounter,
-		)(
-			MakeUncompleteTaskEndpoint(svc),
-		),
-	)
-	deleteTaskEndpoint := middleware.LoggingMiddleware(log.With(logger, "method", "DeleteTask"))(
-		middleware.MetricsMiddleware(
-			requestLatency.With(metrics.MetricsEndpointNameLabel, "DeleteTask"),
-			requestCounter.With(metrics.MetricsEndpointNameLabel, "DeleteTask"),
-			errorCounter,
-		)(
-			MakeDeleteTaskEndpoint(svc),
-		),
+		)(MakeDeleteTaskEndpoint(svc)),
 	)
 	return Endpoints{
-		HelloEndpoint:          helloEndpoint,
 		ListTasksEndpoint:      listTasksEndpoint,
 		GetTaskEndpoint:        getTaskEndpoint,
 		CreateTaskEndpoint:     createTaskEndpoint,
@@ -142,17 +119,6 @@ func New(svc service.Service, logger log.Logger, requestLatency kitmetrics.Histo
 		CompleteTaskEndpoint:   completeTaskEndpoint,
 		UncompleteTaskEndpoint: uncompleteTaskEndpoint,
 		DeleteTaskEndpoint:     deleteTaskEndpoint,
-	}
-}
-
-func MakeHelloEndpoint(svc service.Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (response interface{}, err error) {
-		req := request.(HelloRequest)
-		greeting, err := svc.Hello(req.Name)
-		if err != nil {
-			return nil, err
-		}
-		return HelloResponse{Greeting: greeting}, nil
 	}
 }
 
