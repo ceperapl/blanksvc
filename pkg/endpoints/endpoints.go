@@ -2,12 +2,17 @@ package endpoints
 
 import (
 	"context"
+	"fmt"
 
+	"github.com/company/blanksvc/pkg/common"
 	"github.com/company/blanksvc/pkg/endpoints/middleware"
 	"github.com/company/blanksvc/pkg/metrics"
 	"github.com/company/blanksvc/pkg/models"
 	"github.com/company/blanksvc/pkg/service"
+	"github.com/company/blanksvc/pkg/service/filtering"
+	"github.com/company/blanksvc/pkg/service/sorting"
 	kitmetrics "github.com/go-kit/kit/metrics"
+	uuid "github.com/satori/go.uuid"
 
 	"github.com/go-kit/kit/endpoint"
 	"github.com/go-kit/log"
@@ -31,8 +36,8 @@ type ListTasksRequest struct {
 }
 
 type ListTaskResponse struct {
-	Tasks []*models.Task `json:"tasks"`
-	Count int64          `json:"count"`
+	Tasks []models.Task `json:"tasks"`
+	Count int64         `json:"count"`
 }
 
 type GetTaskRequest struct {
@@ -122,75 +127,115 @@ func New(svc service.Service, logger log.Logger, requestLatency kitmetrics.Histo
 	}
 }
 
+// MakeListTasksEndpoint creates ListTasks endpoint
 func MakeListTasksEndpoint(svc service.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (response interface{}, err error) {
-		req := request.(ListTasksRequest)
-		tasks, count, err := svc.ListTasks(req.Filter, req.Sort, req.ItemsOnPage, req.Page)
+		req, ok := request.(ListTasksRequest)
+		if !ok {
+			return nil, fmt.Errorf("%w: ListTasksRequest", common.ErrTypeAssertion)
+		}
+		filter, err := filtering.NewFilter(req.Filter, models.Task{})
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("filter creation: %w", err)
+		}
+		sort, err := sorting.NewSort(req.Sort, models.Task{})
+		if err != nil {
+			return nil, fmt.Errorf("sort creation: %w", err)
+		}
+
+		tasks, count, err := svc.ListTasks(filter, sort, req.ItemsOnPage, req.Page)
+		if err != nil {
+			return nil, fmt.Errorf("list tasks service: %w", err)
 		}
 		return ListTaskResponse{Tasks: tasks, Count: count}, nil
 	}
 }
 
+// MakeGetTaskEndpoint creates GetTask endpoint
 func MakeGetTaskEndpoint(svc service.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (response interface{}, err error) {
-		req := request.(GetTaskRequest)
+		req, ok := request.(GetTaskRequest)
+		if !ok {
+			return nil, fmt.Errorf("%w: GetTaskRequest", common.ErrTypeAssertion)
+		}
 		task, err := svc.GetTask(req.ID)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("get task service: %w", err)
 		}
 		return *task, nil
 	}
 }
 
+// MakeCreateTaskEndpoint creates CreateTask endpoint
 func MakeCreateTaskEndpoint(svc service.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (response interface{}, err error) {
-		req := request.(*models.Task)
+		req, ok := request.(*models.Task)
+		if !ok {
+			return nil, fmt.Errorf("%w: *Task", common.ErrTypeAssertion)
+		}
+		if req.ID == "" {
+			req.ID = uuid.NewV4().String()
+		}
 		task, err := svc.CreateTask(req)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("create task service: %w", err)
 		}
 		return *task, nil
 	}
 }
 
+// MakeUpdateTaskEndpoint creates UpdateTask endpoint
 func MakeUpdateTaskEndpoint(svc service.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (response interface{}, err error) {
-		req := request.(*models.Task)
+		req, ok := request.(*models.Task)
+		if !ok {
+			return nil, fmt.Errorf("%w: *Task", common.ErrTypeAssertion)
+		}
 		task, err := svc.UpdateTask(req)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("update task service: %w", err)
 		}
 		return *task, nil
 	}
 }
 
+// MakeCompleteTaskEndpoint creates CompleteTask endpoint
 func MakeCompleteTaskEndpoint(svc service.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (response interface{}, err error) {
-		req := request.(CompleteTaskRequest)
+		req, ok := request.(CompleteTaskRequest)
+		if !ok {
+			return nil, fmt.Errorf("%w: CompleteTaskRequest", common.ErrTypeAssertion)
+		}
 		if err := svc.CompleteTask(req.ID); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("complete task service: %w", err)
 		}
 		return nil, nil
 	}
 }
 
+// MakeUncompleteTaskEndpoint creates UncompleteTask endpoint
 func MakeUncompleteTaskEndpoint(svc service.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (response interface{}, err error) {
-		req := request.(UncompleteTaskRequest)
+		req, ok := request.(UncompleteTaskRequest)
+		if !ok {
+			return nil, fmt.Errorf("%w: UncompleteTaskRequest", common.ErrTypeAssertion)
+		}
 		if err := svc.UncompleteTask(req.ID); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("uncomplete task service: %w", err)
 		}
 		return nil, nil
 	}
 }
 
+// MakeDeleteTaskEndpoint creates DeleteTask endpoint
 func MakeDeleteTaskEndpoint(svc service.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (response interface{}, err error) {
-		req := request.(DeleteTaskRequest)
+		req, ok := request.(DeleteTaskRequest)
+		if !ok {
+			return nil, fmt.Errorf("%w: DeleteTaskRequest", common.ErrTypeAssertion)
+		}
 		if err := svc.DeleteTask(req.ID); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("delete task service: %w", err)
 		}
 		return nil, nil
 	}

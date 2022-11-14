@@ -7,7 +7,7 @@ import (
 
 type Check func() error
 
-// ...
+// HealthChecker is the interface that wraps the methods for health checks.
 type HealthChecker interface {
 	AddLivenessChecks(check Check)
 	AddReadinessChecks(check Check)
@@ -15,6 +15,7 @@ type HealthChecker interface {
 	ReadinessHandler() http.HandlerFunc
 }
 
+// NewHealthChecker creates instance of HealthChecker
 func NewHealthChecker() HealthChecker {
 	return &healthcheck{}
 }

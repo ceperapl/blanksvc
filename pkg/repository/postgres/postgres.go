@@ -17,6 +17,7 @@ func New(logger log.Logger, dsn string) (*sql.DB, error) {
 	// Connect to Postgres with retry
 	var db *sql.DB
 	if err := utils.Retry("connect to postgres DB", time.Second, 30, func() (bool, error) {
+		// nolint: errcheck
 		logger.Log("database", dsn)
 		var errOpen error
 		if db, errOpen = sql.Open("postgres", dsn); errOpen != nil {

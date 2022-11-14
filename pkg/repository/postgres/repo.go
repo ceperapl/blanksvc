@@ -4,15 +4,12 @@ import (
 	"database/sql"
 	"errors"
 
+	"github.com/company/blanksvc/pkg/common"
 	"github.com/company/blanksvc/pkg/models"
 	"github.com/company/blanksvc/pkg/repository"
 	"github.com/company/blanksvc/pkg/repository/postgres/transactions"
 	"github.com/company/blanksvc/pkg/service/filtering"
 	"github.com/company/blanksvc/pkg/service/sorting"
-)
-
-var (
-	ErrTaskNotFound = errors.New("task is not found")
 )
 
 type repo struct {
@@ -25,12 +22,12 @@ func NewRepo(txFactory transactions.TxFactory) repository.Repository {
 	}
 }
 
-func (r repo) ListTasks(filter *filtering.Filter, sort *sorting.Sort, itemsOnPage int, page int) ([]*models.Task, int64, error) {
+func (r repo) ListTasks(filter *filtering.Filter, sort *sorting.Sort, itemsOnPage int, page int) ([]models.Task, int64, error) {
 	sqlTx, err := r.txFactory.Begin()
 	if err != nil {
 		return nil, 0, err
 	}
-	var tasks []*models.Task
+	var tasks []models.Task
 	var count int64
 	err = sqlTx.Do(func(sqlTx transactions.TxSQL) (errDo error) {
 		query := `SELECT * from tasks`
@@ -48,7 +45,7 @@ func (r repo) ListTasks(filter *filtering.Filter, sort *sorting.Sort, itemsOnPag
 			); errScan != nil {
 				return errScan
 			}
-			tasks = append(tasks, &task)
+			tasks = append(tasks, task)
 		}
 		err = rows.Err()
 		if err != nil {
@@ -91,7 +88,7 @@ func (r repo) GetTask(id string) (*models.Task, error) {
 
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, ErrTaskNotFound
+			return nil, common.ErrTaskNotFound
 		}
 		return nil, err
 	}
@@ -127,8 +124,11 @@ func (r repo) UpdateTask(task *models.Task) error {
 	if err != nil {
 		return err
 	}
+	if _, getErr := r.GetTask(task.ID); err != nil {
+		return getErr
+	}
 	err = sqlTx.Do(func(sqlTx transactions.TxSQL) (errDo error) {
-		query := `UPDATE tasks SET name = $1, description = $2, deadline = $3, completed_at = $4, updated_at = now()
+		query := `UPDATE tasks SET name = $1, description = $2, deadline = $3, updated_at = now()
 			WHERE id = $5`
 
 		_, err := sqlTx.Exec(query, task.Name, task.Description, task.Deadline, task.CompletedAt, task.ID)

@@ -149,7 +149,8 @@ func encodeGRPCListTasksResponse(_ context.Context, response interface{}) (inter
 	resp := response.(endpoints.ListTaskResponse)
 	var grpcTasks []*taskv1.Task
 	for _, task := range resp.Tasks {
-		grpcTasks = append(grpcTasks, TransformTask(task))
+		task := task
+		grpcTasks = append(grpcTasks, TransformTask(&task))
 	}
 
 	return &taskv1.ListTasksResponse{

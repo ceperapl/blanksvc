@@ -12,7 +12,9 @@ import (
 	kitmetrics "github.com/go-kit/kit/metrics"
 )
 
-func MetricsMiddleware(requestLatency kitmetrics.Histogram, requestCounter kitmetrics.Counter, errorCounter kitmetrics.Counter) endpoint.Middleware {
+// MetricsMiddleware returns an endpoint middleware that add metrics
+func MetricsMiddleware(requestLatency kitmetrics.Histogram, requestCounter kitmetrics.Counter, errorCounter kitmetrics.Counter,
+) endpoint.Middleware {
 	return func(next endpoint.Endpoint) endpoint.Endpoint {
 		return func(ctx context.Context, request interface{}) (interface{}, error) {
 			defer func(begin time.Time) {
