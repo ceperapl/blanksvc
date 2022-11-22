@@ -1,9 +1,9 @@
 package repository
 
 import (
+	"github.com/company/blanksvc/pkg/filtering"
 	"github.com/company/blanksvc/pkg/models"
-	"github.com/company/blanksvc/pkg/service/filtering"
-	"github.com/company/blanksvc/pkg/service/sorting"
+	"github.com/company/blanksvc/pkg/sorting"
 )
 
 // Repository is an abstract repository layer for data access

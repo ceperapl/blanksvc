@@ -6,11 +6,11 @@ import (
 	"fmt"
 
 	"github.com/company/blanksvc/pkg/common"
+	"github.com/company/blanksvc/pkg/filtering"
 	"github.com/company/blanksvc/pkg/models"
 	"github.com/company/blanksvc/pkg/repository"
 	"github.com/company/blanksvc/pkg/repository/postgres/transactions"
-	"github.com/company/blanksvc/pkg/service/filtering"
-	"github.com/company/blanksvc/pkg/service/sorting"
+	"github.com/company/blanksvc/pkg/sorting"
 )
 
 type repo struct {
@@ -30,10 +30,12 @@ func (r repo) ListTasks(filter *filtering.Filter, sort *sorting.Sort, itemsOnPag
 	}
 	var tasks []models.Task
 	var count int64
-	err = sqlTx.Do(func(sqlTx transactions.TxSQL) error {
-		query := `SELECT * from tasks`
+	filterSQL, args := filter.ToPostgresSQL(1)
 
-		rows, queryErr := sqlTx.Query(query)
+	err = sqlTx.Do(func(sqlTx transactions.TxSQL) error {
+		query := fmt.Sprintf("SELECT * from tasks %s %s", filterSQL, sort.ToSQL())
+
+		rows, queryErr := sqlTx.Query(query, args...)
 		if queryErr != nil {
 			return fmt.Errorf("query execution: %w", queryErr)
 		}
@@ -54,8 +56,8 @@ func (r repo) ListTasks(filter *filtering.Filter, sort *sorting.Sort, itemsOnPag
 			return rowsErr
 		}
 
-		query = `SELECT count(*) from tasks`
-		queryErr = sqlTx.QueryRow(query).
+		query = fmt.Sprintf("SELECT count(*) from tasks %s %s", filterSQL, sort.ToSQL())
+		queryErr = sqlTx.QueryRow(query, args...).
 			Scan(&count)
 		if queryErr != nil {
 			return fmt.Errorf("query execution: %w", queryErr)

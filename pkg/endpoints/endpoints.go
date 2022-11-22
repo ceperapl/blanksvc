@@ -6,11 +6,11 @@ import (
 
 	"github.com/company/blanksvc/pkg/common"
 	"github.com/company/blanksvc/pkg/endpoints/middleware"
+	"github.com/company/blanksvc/pkg/filtering"
 	"github.com/company/blanksvc/pkg/metrics"
 	"github.com/company/blanksvc/pkg/models"
 	"github.com/company/blanksvc/pkg/service"
-	"github.com/company/blanksvc/pkg/service/filtering"
-	"github.com/company/blanksvc/pkg/service/sorting"
+	"github.com/company/blanksvc/pkg/sorting"
 	kitmetrics "github.com/go-kit/kit/metrics"
 	uuid "github.com/satori/go.uuid"
 
@@ -138,7 +138,7 @@ func MakeListTasksEndpoint(svc service.Service) endpoint.Endpoint {
 		}
 		var filter *filtering.Filter
 		if req.Filter != "" {
-			filter, err = filtering.NewFilter(req.Filter, models.Task{})
+			filter, err = filtering.New(req.Filter, models.Task{})
 			if err != nil {
 				return nil, fmt.Errorf("filter creation: %w", err)
 			}
@@ -146,7 +146,7 @@ func MakeListTasksEndpoint(svc service.Service) endpoint.Endpoint {
 
 		var sort *sorting.Sort
 		if req.Sort != "" {
-			sort, err = sorting.NewSort(req.Sort, models.Task{})
+			sort, err = sorting.New(req.Sort, models.Task{})
 			if err != nil {
 				return nil, fmt.Errorf("sort creation: %w", err)
 			}

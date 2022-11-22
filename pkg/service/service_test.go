@@ -7,10 +7,10 @@ import (
 	"time"
 
 	"github.com/company/blanksvc/pkg/common"
+	"github.com/company/blanksvc/pkg/filtering"
 	"github.com/company/blanksvc/pkg/models"
 	"github.com/company/blanksvc/pkg/repository/mocks"
-	"github.com/company/blanksvc/pkg/service/filtering"
-	"github.com/company/blanksvc/pkg/service/sorting"
+	"github.com/company/blanksvc/pkg/sorting"
 	"github.com/go-kit/log"
 	"github.com/stretchr/testify/assert"
 )
