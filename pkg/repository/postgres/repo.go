@@ -31,9 +31,10 @@ func (r repo) ListTasks(filter *filtering.Filter, sort *sorting.Sort, itemsOnPag
 	var tasks []models.Task
 	var count int64
 	filterSQL, args := filter.ToPostgresSQL(1)
+	offset := itemsOnPage * page
 
 	err = sqlTx.Do(func(sqlTx transactions.TxSQL) error {
-		query := fmt.Sprintf("SELECT * from tasks %s %s", filterSQL, sort.ToSQL())
+		query := fmt.Sprintf("SELECT * from tasks %s %s OFFSET %d LIMIT %d", filterSQL, sort.ToSQL(), offset, itemsOnPage)
 
 		rows, queryErr := sqlTx.Query(query, args...)
 		if queryErr != nil {
@@ -56,7 +57,7 @@ func (r repo) ListTasks(filter *filtering.Filter, sort *sorting.Sort, itemsOnPag
 			return rowsErr
 		}
 
-		query = fmt.Sprintf("SELECT count(*) from tasks %s %s", filterSQL, sort.ToSQL())
+		query = fmt.Sprintf("SELECT count(*) from tasks %s", filterSQL)
 		queryErr = sqlTx.QueryRow(query, args...).
 			Scan(&count)
 		if queryErr != nil {

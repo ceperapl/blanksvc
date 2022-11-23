@@ -26,6 +26,8 @@ const (
 	completeTaskEndpointName   = "CompleteTask"
 	uncompleteTaskEndpointName = "UncompleteTask"
 	deleteTaskEndpointName     = "DeleteTask"
+
+	defaultItemsOnPage = 50
 )
 
 type ListTasksRequest struct {
@@ -152,7 +154,11 @@ func MakeListTasksEndpoint(svc service.Service) endpoint.Endpoint {
 			}
 		}
 
-		tasks, count, err := svc.ListTasks(filter, sort, req.ItemsOnPage, req.Page)
+		itemsOnPage := req.ItemsOnPage
+		if itemsOnPage == 0 {
+			itemsOnPage = defaultItemsOnPage
+		}
+		tasks, count, err := svc.ListTasks(filter, sort, itemsOnPage, req.Page)
 		if err != nil {
 			return nil, fmt.Errorf("list tasks service: %w", err)
 		}

@@ -18,11 +18,6 @@ import (
 	"github.com/go-kit/log"
 )
 
-const (
-	defaultItemsOnPage = 50
-	defaultPage        = 0
-)
-
 func Handle(mux *mux.Router, endpoints endpoints.Endpoints, logger log.Logger) *mux.Router {
 	options := []httptransport.ServerOption{
 		httptransport.ServerErrorEncoder(errorEncoder),
@@ -88,15 +83,15 @@ func decodeHTTPListTasksRequest(_ context.Context, r *http.Request) (interface{}
 	var err error
 	filter := r.URL.Query().Get("filter")
 	sort := r.URL.Query().Get("sort")
-	itemsOnPage := defaultItemsOnPage
+	var itemsOnPage int
 	if _, ok := r.URL.Query()["itemsOnPage"]; ok {
 		if itemsOnPage, err = strconv.Atoi(r.URL.Query().Get("itemsOnPage")); err != nil {
 			return nil, fmt.Errorf("conversion of itemsOnPage to int: %w", err)
 		}
 	}
-	page := defaultPage
+	var page int
 	if _, ok := r.URL.Query()["page"]; ok {
-		if itemsOnPage, err = strconv.Atoi(r.URL.Query().Get("page")); err != nil {
+		if page, err = strconv.Atoi(r.URL.Query().Get("page")); err != nil {
 			return nil, fmt.Errorf("conversion of page to int: %w", err)
 		}
 	}
