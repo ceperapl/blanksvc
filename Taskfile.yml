@@ -9,30 +9,44 @@ vars:
 
 tasks:
 
+  default:
+    cmds:
+      - task -l
+    silent: true
+
   generate:
+    desc: Generates golang code for migrations, protobuf, mocks
     cmds:
       - go generate -x ./...
 
   buf-lint:
+    desc: Performs static analysis of buf.yaml configuration
     dir: ./api/protobuf-spec
     cmds:
       - buf lint
 
   hadolint:
+    desc: Performs static analysis of dockerfile
     cmds:
       - docker run --rm -i {{.HADOLINT_IMAGE}} < Dockerfile
 
-  analysis:
-    deps: [buf-lint, hadolint]
+  go-lint:
+    desc: Performs static analysis of Go source code
     cmds:
       - golangci-lint run -v ./...
 
+  analysis:
+    desc: Performs static analysis of code and configuration
+    deps: [buf-lint, hadolint, go-lint]
+
   build:
+    desc: Builds the service
     deps: [generate]
     cmds:
       - CGO_ENABLED=0 go build -a -o {{.BINARY_PATH}} .
 
   test:
+    desc: Checks and tests the service
     deps: [analysis]
     cmds:
       - cmd: go test -coverprofile=coverage.out ./...
